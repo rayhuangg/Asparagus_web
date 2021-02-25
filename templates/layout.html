@@ -9,7 +9,7 @@
     <!-- <link rel="stylesheet" href="css/layout.css" class="s"> -->
     <link rel="icon" href="{% static 'asparagus.png' %}">
 </head>
-<body>
+<body style="overflow-x: hidden; height: 100%">
     <nav class="navbar sticky-top navbar-expand-sm navbar-dark bg-dark" style="justify-content: center; opacity: 95%;">
         <div class="container" style="align-items: center;">
             <a class="navbar-brand" href="/">
@@ -22,6 +22,7 @@
                 <!-- <li><a class="nav-link" href="/control/">Control</a></li> -->
                 <li><a class="nav-link" href="/record/">Record</a></li>
                 <li><a class="nav-link" href="/monitor/">Monitor</a></li>
+                <li><a class="nav-link" href="/stats/">Stats</a></li>
                 <li><a class="nav-link" href="/admin/">Admin</a></li>
                 </ul>
             </div>
@@ -36,16 +37,24 @@
         {% block body %}{% endblock%}
     </div>
     <style>
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        html {
+            position: relative;
+            min-height: 100%;
+        }
       .footer {
-        position: relative;
-        background-color: lightgrey;
-        opacity: 95%;
-        height: 50px;
-        width: 100%;
-        bottom: 0;
-      }
+            position: absolute;
+            background-color: lightgrey;
+            opacity: 95%;
+            height: 50px;
+            width: 100%;
+            bottom: 0;
+            left: 0;
+        }
     </style>
-    <footer class="footer mt-auto py-3">
+    <footer class="footer py-3">
         <div class="container" style="text-align: center;">
             <span class="text-muted">Copyright &copy; 2020, Justin Bear</span>
         </div>
