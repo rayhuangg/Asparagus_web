@@ -18,7 +18,7 @@
         <img src="" alt="" id="midCol-img" style="width: 100%; height: auto; margin-left: auto; margin-right: auto; display: block;">
     </div>
 
-    <div class="col-6 col-lg-3 order-lg-1" id="leftCol" >
+    <div class="col-6 col-lg-3 order-lg-1" id="leftCol" style="margin-bottom: 4rem;">
         <div class="form-floating" style="margin:1em 1em">
             <select id="inputGroup1" class="form-select" onchange="sendDemoId()">
                 <option selected>Select...</option>
@@ -28,6 +28,7 @@
             </select>
             <label for="inputGroup1">Date</label>
         </div>
+        <div id="btns" style="height:40rem; overflow: auto; overflow-x:hidden;"></div>
     </div>
 
     <div class="col-6 col-lg-3 order-lg-3" id="rightCol">
@@ -50,7 +51,7 @@
         <div id="elseToast"></div>
     </div>
 </div>
-<div>
+<!-- <div>
     <div class="row no-gutters align items-center">
         <div class="col-3" >
             <form class="g-3 was-validated">
@@ -84,18 +85,18 @@
             <canvas id="myChart"></canvas>
         </div>
     </div>
-</div>
+</div> -->
 
 <script>
 
 
-    var containerDiv = document.getElementById('leftCol')
+    var containerDiv = document.getElementById('btns')
 
-    for (var i = 0; i < 9; i++) {
+    for (var i = 0; i < 25; i++) {
         var rowDiv = document.createElement('div');
-        rowDiv.className = 'row align-items-center';
+        rowDiv.className = 'row no-gutters align-items-center';
         rowDiv.id = 'section';
-        rowDiv.style.padding = '0 0.5rem';
+        rowDiv.style.padding = '0 0.3rem';
         for (var j = 0; j < 7 ; j++){
             var colList = ['', 'A', 'B', 'C', 'D', 'E', 'F'];
             var colDiv = document.createElement('div');
@@ -189,57 +190,60 @@
                 document.getElementById("elseToast").innerHTML = '';
                 document.getElementById("midCol-img").src = context['image'];
                 // await delay(120);
-                var img = document.getElementById("midCol-img");
-                var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                svg.setAttribute('width', img.clientWidth);
-                svg.setAttribute('height', img.clientHeight);
-                svg.style.position = 'absolute';
-                var clump=0, stalk=0, spear=0;
+                setTimeout(function(){
+                    var img = document.getElementById("midCol-img");
+                    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                    svg.setAttribute('width', img.clientWidth);
+                    svg.setAttribute('height', img.clientHeight);
+                    svg.style.position = 'absolute';
+                    var clump=0, stalk=0, spear=0;
 
-                for (var i = 0; i < context['instance'].length; i++){
-                    if (context['instance'][i]['class'] == 'clump'){
-                        var obj = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-                        obj.setAttribute('x', context['instance'][i]['bbox'][0]*img.clientWidth/img.naturalWidth);
-                        obj.setAttribute('y', context['instance'][i]['bbox'][1]*img.clientHeight/img.naturalHeight);
-                        obj.setAttribute('width', (context['instance'][i]['bbox'][2] - context['instance'][i]['bbox'][0])*img.clientWidth/img.naturalWidth);
-                        obj.setAttribute('height', (context['instance'][i]['bbox'][3] - context['instance'][i]['bbox'][1])*img.clientHeight/img.naturalHeight);
-                        obj.setAttribute('fill-opacity', 0)
-                        obj.setAttribute('stroke', 'blue')
-                        obj.setAttribute('stroke-width', 2)
-                        clump++
-                    }else {
-                        var obj = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
-                        var mask = rescale(context['instance'][i]['mask'], [img.naturalHeight, img.naturalWidth], [img.clientHeight, img.clientWidth]);
-                        obj.setAttribute('points', mask)
-                        if (context['instance'][i]['class'] == 'stalk'){
-                            obj.setAttribute('fill', 'darkgreen')
-                            stalk++
-                        }else if (context['instance'][i]['class'] == 'spear') {
-                            obj.setAttribute('fill', 'red')
-                            spear++
+                    for (var i = 0; i < context['instance'].length; i++){
+                        if (context['instance'][i]['class'] == 'clump'){
+                            var obj = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                            obj.setAttribute('x', context['instance'][i]['bbox'][0]*img.clientWidth/img.naturalWidth);
+                            obj.setAttribute('y', context['instance'][i]['bbox'][1]*img.clientHeight/img.naturalHeight);
+                            obj.setAttribute('width', (context['instance'][i]['bbox'][2] - context['instance'][i]['bbox'][0])*img.clientWidth/img.naturalWidth);
+                            obj.setAttribute('height', (context['instance'][i]['bbox'][3] - context['instance'][i]['bbox'][1])*img.clientHeight/img.naturalHeight);
+                            obj.setAttribute('fill-opacity', 0)
+                            obj.setAttribute('stroke', 'blue')
+                            obj.setAttribute('stroke-width', 2)
+                            clump++
+                        }else {
+                            var obj = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                            var mask = rescale(context['instance'][i]['mask'], [img.naturalHeight, img.naturalWidth], [img.clientHeight, img.clientWidth]);
+                            obj.setAttribute('points', mask)
+                            if (context['instance'][i]['class'] == 'stalk'){
+                                obj.setAttribute('fill', 'darkgreen')
+                                stalk++
+                            }else if (context['instance'][i]['class'] == 'spear') {
+                                obj.setAttribute('fill', 'red')
+                                spear++
+                            }
+                            else {
+                                obj.setAttribute('fill', 'cyan')
+                            }
+                            obj.setAttribute('fill-opacity', 0.5)
+                            obj.setAttribute('cursor', 'pointer');
                         }
-                        else {
-                            obj.setAttribute('fill', 'cyan')
-                        }
-                        obj.setAttribute('fill-opacity', 0.5)
-                        obj.setAttribute('cursor', 'pointer');
+                        obj.addEventListener('click', info.bind(this, context, i), false)
+                        obj.setAttribute('id', 'svg'+i.toString());
+                        svg.append(obj);
                     }
-                    obj.addEventListener('click', info.bind(this, context, i), false)
-                    obj.setAttribute('id', 'svg'+i.toString());
-                    svg.append(obj);
-                }
-                document.getElementById('totalToast-title').innerText = 'Zone: '+context['section'];
-                document.getElementById('instanceId').innerHTML = 'ID: '+context['id'].toString();
-                document.getElementById('clump').innerHTML = 'Clump: '+clump.toString();
-                document.getElementById('stalk').innerHTML = 'Stalk: '+stalk.toString();
-                document.getElementById('spear').innerHTML = 'Spear: '+spear.toString();
+                    document.getElementById('totalToast-title').innerText = 'Zone: '+context['section'];
+                    document.getElementById('instanceId').innerHTML = 'ID: '+context['id'].toString();
+                    document.getElementById('clump').innerHTML = 'Clump: '+clump.toString();
+                    document.getElementById('stalk').innerHTML = 'Stalk: '+stalk.toString();
+                    document.getElementById('spear').innerHTML = 'Spear: '+spear.toString();
+                    
+                    // img.after(svg)
+                    midCol.append(svg)
+                    $('#totalToast').toast({
+                        autohide: false,
+                    })
+                    $('#totalToast').toast('show')
+                    }, 20)
                 
-                // img.after(svg)
-                midCol.append(svg)
-                $('#totalToast').toast({
-                    autohide: false,
-                })
-                $('#totalToast').toast('show')
             }
         });
     }
