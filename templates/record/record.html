@@ -80,7 +80,7 @@
 
     {% endfor %}
 
-    <div class="container" id="btns" style="background-color: rgb(250, 239, 225); border-radius: 1em; padding: 1em; margin-bottom: 2rem;"></div>
+    <div class="container" id="btns" style="background-color: rgb(250, 239, 225); border-radius: 1em; padding: 1em; margin-bottom: 5rem; height:50rem; overflow: auto; overflow-x:auto;"></div>
 
     <form action="/record/front/" method="post" enctype="multipart/form-data" style="display: None;">
         {% csrf_token %}
@@ -96,7 +96,7 @@
 
     var levels = {{ levels|safe }};
 
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < 25; i++) {
         var rowDiv = document.createElement('div');
         rowDiv.className = 'row align-items-center';
         rowDiv.id = 'section';
@@ -109,7 +109,7 @@
                 var divText = document.createTextNode('');
                 colDiv.style.alignContent = 'center'
                 colDiv.appendChild(divText);
-            }else if (i === 9 || j === 7 ){
+            }else if (j === 7 ){
                 var divText = document.createTextNode('');
                 colDiv.style.alignContent = 'center'
                 colDiv.appendChild(divText);
