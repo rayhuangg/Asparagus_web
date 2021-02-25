@@ -1,0 +1,133 @@
+{% extends '../layout.html' %}
+
+{% block body %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+<div>
+    <div class="row no-gutters align items-center">
+        <div class="col-3" >
+            <form class="g-3 was-validated">
+                <div class="form-floating" style="margin: 1em 1em">
+                    <select class="form-select" id="floatingSelect-from" required aria-label="Floating label select example" onchange="selectionChange()">
+                        <option value="">...</option>
+                        {% for demo in demolist %}
+                        <option value="{{demo.id}}">{{demo.name}}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="floatingSelect-from">From</label>
+                </div>
+                <div class="form-floating" style="margin: 1em 1em">
+                    <select class="form-select" id="floatingSelect-until" required aria-label="Floating label select example" onchange="sendRange()">
+                        <option value="">...</option>
+                    </select>
+                    <label for="floatingSelect-until">Until</label>
+                </div>
+                <div class="form-floating" style="margin: 1em 1em">
+                    <select class="form-select" id="floatingSelect-section" required aria-label="Floating label select example" onchange="sendRange()">
+                        <option value="0">All</option>
+                        {% for section in sections %}
+                        <option value="{{section.id}}">{{section.name}}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="floatingSelect-until">Area</label>
+                </div>
+            </form>
+        </div>
+        <div class="col-9" id="chartCol">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+    function selectionChange(){
+        var fromValue = document.getElementById('floatingSelect-from').value;
+        var untilSelect = document.getElementById('floatingSelect-until');
+        var demorange = {{ demorange|safe }};
+        untilSelect.options.length = 0;
+        if(fromValue){
+            for(let i = 0; i < demorange.length; i++){
+                if(i+2 > fromValue){
+                    var option = document.createElement("option");
+                    option.value = demorange[i][0];
+                    option.text = demorange[i][1];
+                    untilSelect.append(option);
+                }
+                else if (i+2 == fromValue){
+                    var option = document.createElement("option");
+                    option.value = "";
+                    option.text = "...";
+                    untilSelect.append(option);
+                }
+            }
+        }
+        else{
+            var option = document.createElement("option");
+            option.value = "";
+            option.text = "...";
+            untilSelect.append(option);
+        }
+        
+    }
+
+    function sendRange(){
+        $.ajax({
+            url: 'sendRange',
+            type: 'POST',
+            data: {
+                fromValue: document.getElementById('floatingSelect-from').value,
+                untilValue: document.getElementById('floatingSelect-until').value,
+                section: document.getElementById('floatingSelect-section').value
+            },
+            success: function(context){
+                var context = JSON.parse(context);
+                document.getElementById('chartCol').innerHTML = '<canvas id="myChart"></canvas>';
+                var ctx = document.getElementById('myChart').getContext('2d');
+                var chart = new Chart(ctx, {
+                    // The type of chart we want to create
+                    type: 'bar',
+
+                    // The data for our dataset
+                    data: {
+                        labels: context['labels'],
+                        datasets: [{
+                            label: 'Clump',
+                            backgroundColor: 'rgb(255, 99, 132)',
+                            borderColor: 'rgb(255, 99, 132)',
+                            fill: false,
+                            data: context['clumps']
+                        },
+                        {
+                            label: 'Stalk',
+                            backgroundColor: 'rgb(237, 170, 97)',
+                            borderColor: 'rgb(237, 170, 97)',
+                            fill: false,
+                            data: context['stalks']
+                        },
+                        {
+                            label: 'Spear',
+                            backgroundColor: 'rgb(181, 242, 107)',
+                            borderColor: 'rgb(181, 242, 107)',
+                            fill: false,
+                            data: context['spears']
+                        }]
+                    },
+                    // Configuration options go here
+                    options: {
+                        tooltips: {
+                            enabled: true,
+                            intersect: false,
+                        },
+                        legend: {
+                            position: 'right',
+                            align: 'center',
+                            onHover: 'pointer',
+                        }
+                    }
+                });
+            }
+        })
+        
+    }
+</script>
+
+{% endblock %}
