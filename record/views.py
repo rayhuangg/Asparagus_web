@@ -1,7 +1,7 @@
 from django.shortcuts import render, reverse, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, HttpResponseRedirect
-from .models import ImageList, FrontView
+from .models import Section, ImageList, FrontView
 from .forms import ImageListForm, FrontViewForm
 import sys
 from os import path
@@ -14,26 +14,26 @@ import json
 
 @csrf_exempt
 def index(request):
-    row = ['A', 'B', 'C', 'D', 'E', 'F']
-    col = [1, 2, 3, 4, 5, 6, 7, 8]
+
     context = {}
     levels = {}
     now = datetime.datetime.now(datetime.timezone.utc)
-    for r in row:
-        for c in col:
-            try:
-                latest_img = ImageList.objects.filter(section__name=r+str(c))[0]
-                timedelta = now - latest_img.date
-                if timedelta.days >= 2:
-                    level = 'warning'
-                    if timedelta.days >= 4:
-                        level = 'danger'
-                else:
-                    level = 'primary'
-            except:
-                level = 'danger'
-            context[r+str(c)] = {'section': r+str(c), 'imagelist':ImageList.objects.filter(section__name=r+str(c))[:4]}
-            levels[r+str(c)] = level
+
+    sections = Section.objects.all()
+    for section in sections:
+        try:
+            latest_img = ImageList.objects.filter(section__name=section.name)[0]
+            timedelta = now - latest_img.date
+            if timedelta.days >= 2:
+                level = 'warning'
+                if timedelta.days >= 4:
+                    level = 'danger'
+            else:
+                level = 'primary'
+        except:
+            level = 'danger'
+        context[section.name] = {'section': section.name, 'imagelist':ImageList.objects.filter(section__name=section.name)[:4]}
+        levels[section.name] = level
     frontview = FrontView.objects.latest
     return render(request, 'record/record.html', {'context': context, 'frontview': frontview, 'levels': json.dumps(levels)})
 
