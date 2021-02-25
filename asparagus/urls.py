@@ -23,6 +23,7 @@ urlpatterns = [
     path('', include('home.urls')),
     path('record/', include('record.urls')),
     path('monitor/', include('monitor.urls')),
+    path('stats/', include('stats.urls')),
     path('admin/', admin.site.urls),
     re_path(r'^celery-progress/', include('celery_progress.urls')),
 ]

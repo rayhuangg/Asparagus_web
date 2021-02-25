@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'monitor.apps.MonitorConfig',
     'record.apps.RecordConfig',
+    'stats.apps.StatsConfig',
     'sorl.thumbnail',
     'celery_progress',
 ]
