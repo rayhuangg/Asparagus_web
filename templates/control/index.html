@@ -1,0 +1,122 @@
+{% extends 'layout.html' %}
+
+{% block body %}
+<style>
+    .videos{
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        text-align: center;
+    }
+    
+    .videos div {
+        padding: 5% 0%;
+    }
+
+    .form-container  form {
+        display: grid;
+        grid-template-columns: 1fr 1fr 1fr;
+        grid-gap: 1em;
+        text-align: center;
+        justify-items: center;
+    }
+    .form-container form #submit {
+        grid-column: 2/3;
+    }
+
+    .lidar-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        align-items: center;
+        justify-items: center;
+    }
+
+    .move {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-auto-rows: 100px;
+        grid-gap: 2em;
+        padding: 5%;
+    }
+
+    .move a {
+         background: lightblue;
+         font: '20px';
+    }
+
+    .move #f {
+        grid-column: 4/5;
+        font: 16px;
+        text-align: center;
+    }
+
+    .move #l {
+        grid-column: 1/2;
+        font: 16px;
+        text-align: center;
+    }
+
+    .move #r {
+        grid-column: 2/3;
+        font: 16px;
+        text-align: center;
+    }
+
+    .move #s {
+        grid-column: 4/5;
+        font: 16px;
+        text-align: center;
+    }
+
+    .move #b {
+        grid-column: 4/5;
+        font: 16px;
+        text-align: center;
+    }
+    
+    h2 {
+        text-align: middle;
+        font-size: 20px;
+    }
+</style>
+
+<div class="videos">
+    <div>
+        <h1>Left</h1>
+        <img id="left" src="{{ url_for('left') }}" alt="None" width="480" height="360">
+    </div>
+    
+    <div>
+        <h1>Front</h1>
+        <img id="front" src="{{ url_for('front') }}" alt="None" width="480" height="360">
+    </div>
+    
+    <div>
+        <h1>Right</h1>
+        <img id="right" src="{{ url_for('right') }}" alt="None" width="480" height="360">
+    </div>
+    
+</div>
+
+<div class="form-container">
+    <form action="{{ url_for('capture') }}" method="post">
+        <input type="text" name="Left" placeholder="Left name">
+        <input type="text" name="Front" placeholder="Front name">
+        <input type="text" name="Right" placeholder="Right name">
+        <input id="submit" type="submit" value="Save images">
+    </form>
+</div>
+
+<div class="move">
+	<a id="f" href="/forward" class="btn btn-primary btn-lg" role="button">Forward</a>
+	<a id="l" href="/turnLeft" class="btn btn-primary btn-lg" role="button">Turn left</a>
+	<a id="r" href="/turnRight" class="btn btn-primary btn-lg" role="button">Turn right</a>
+	<a id="s" href="/stop" class="btn btn-primary btn-lg" role="button">Stop</a>
+	<a id="b" href="/backward" class="btn btn-primary btn-lg" role="button">Backward</a>
+</div>
+{% if cmd %}
+
+<h2> Command: {{ cmd }} </h2>
+
+{% endif %}
+
+{% endblock %}

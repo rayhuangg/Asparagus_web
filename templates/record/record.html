@@ -1,0 +1,166 @@
+{% extends '../layout.html' %}
+
+{% block body %}
+<style>
+    #section{
+        text-align: center;
+        vertical-align: middle;
+        height: 6em;
+    }
+
+    .col{
+        text-align: center;
+        vertical-align: middle;
+        margin: auto;
+        font-size: 1.3rem;
+    }
+
+    #FrontViewImg{
+        display: block;
+        margin:auto;
+        background-color: rgb(250, 239, 225);
+        width: 70%;
+        height: auto;
+    }
+
+
+</style>
+
+<div id="main">
+    <form action="/record/side/" method="post" enctype="multipart/form-data" style="display: None">
+        {% csrf_token %}
+        {{ form.as_table }}
+        <input type="submit" value="Submit">
+    </form>
+
+    <div id="FrontView" class="container" style="align-items: center; margin-top: 2rem;">
+        <img id="FrontViewImg" class="img-fluid" src="{{ frontview.image.url }}" alt="None">
+    </div>
+    <div class="row align-items-center" style="height: auto;">
+        <div class="col">
+            <button class="btn btn-danger btn-lg" id="demo" onclick="Demo()" style="margin: 1em">
+                <span class="spinner-border" id="demoSpan" role="status" aria-hidden="true" style="margin: 0em 1em 0em 0em; display: none"></span>
+                <span id="demoWord" style="font-size: 2rem;">Demo</span>
+            </button>
+        </div>
+    </div>
+    {% for key, value in context.items %}
+
+    <div class="modal fade" id="{{value.section}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">{{ value.section }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+                        {% for img in value.imagelist %}
+                        <div class="row">
+                            <div class="col-8">
+                                <img class="img-fluid" id="modalImg" src="{{ img.image.url }}" alt="None" style="width: auto; max-height: 90%;">
+                            </div>
+                            <div class="col-4" style="text-align: left;">
+                                <p>Name: {{img.name}}</p>
+                                <p>Date: {{img.date}}</p>
+                                <p>ID: {{img.id}}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                </div>
+            <!-- <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary">Save changes</button>
+            </div> -->
+            </div>
+        </div>
+    </div>
+
+    {% endfor %}
+
+    <div class="container" id="btns" style="background-color: rgb(250, 239, 225); border-radius: 1em; padding: 1em; margin-bottom: 2rem;"></div>
+
+    <form action="/record/front/" method="post" enctype="multipart/form-data" style="display: None;">
+        {% csrf_token %}
+        {{ form.as_table }}
+        <input type="submit" value="Submit">
+    </form>
+
+</div>
+
+
+<script >
+    var containerDiv = document.getElementById('btns');
+
+    var levels = {{ levels|safe }};
+
+    for (var i = 0; i < 10; i++) {
+        var rowDiv = document.createElement('div');
+        rowDiv.className = 'row align-items-center';
+        rowDiv.id = 'section';
+        for (var j = 0; j < 8 ; j++){
+            var colList = ['', 'A', 'B', 'C', 'D', 'E', 'F'];
+            var colDiv = document.createElement('div');
+            colDiv.className = 'col d-grid';
+            colDiv.style.height = '90%'
+            if (i === 0 & j === 0) {
+                var divText = document.createTextNode('');
+                colDiv.style.alignContent = 'center'
+                colDiv.appendChild(divText);
+            }else if (i === 9 || j === 7 ){
+                var divText = document.createTextNode('');
+                colDiv.style.alignContent = 'center'
+                colDiv.appendChild(divText);
+            }else if (j === 0){
+                var divText = document.createTextNode(i.toString());
+                colDiv.style.alignContent = 'center'
+                colDiv.appendChild(divText);
+            }else if (i === 0){
+                var divText = document.createTextNode(colList[j]);
+                colDiv.style.alignContent = 'center'
+                colDiv.appendChild(divText);
+            }
+            else {
+                var btn = document.createElement('button');
+                var btnText = document.createTextNode(colList[j] + i.toString());
+                btn.appendChild(btnText);
+                btn.type = 'button';
+                btn.className = 'btn btn-' + levels[colList[j] + i.toString()];
+                btn.id = colList[j] + i.toString();
+                btn.style.fontSize = '1.5rem';
+                btn.setAttribute('data-bs-toggle', 'modal')
+                btn.setAttribute('data-bs-target', '#' + colList[j] + i.toString())
+                // btn.setAttribute('onclick', 'onClick('+colList[j] + i.toString()+')')
+                colDiv.append(btn);
+            }
+            rowDiv.append(colDiv);
+        }
+        containerDiv.append(rowDiv);
+    }
+
+
+    function Demo() {
+        document.getElementById('demoSpan').style.display = '';
+        document.getElementById('demoWord').innerText = 'Identifying...';
+        $.ajax({
+            url:'../monitor/demo/',
+            type: 'POST',
+            data: {
+                demo: true,
+            },
+            success: function() {
+                document.getElementById('demoSpan').style.display = '';
+                document.getElementById('demo').innerText = 'Demo';
+            },
+            
+        });
+    }
+
+
+
+</script>
+
+
+{% endblock %}

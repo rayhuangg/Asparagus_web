@@ -1,0 +1,9 @@
+{
+    "version": 3,
+    "mappings": "",
+    "sources": [
+        "../templates/scss/layout.scss"
+    ],
+    "names": [],
+    "file": "layout.css"
+}

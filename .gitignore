@@ -1,0 +1,12 @@
+__pycache__/
+*.jpg
+*.json
+*.png
+*.mp4
+*.MOV
+*.pth
+*.pkl
+**/migrations
+detectron/config/**
+detectron/dataset/**
+db.sqlite3

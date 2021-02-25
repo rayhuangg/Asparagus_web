@@ -1,0 +1,1 @@
+CUDA_VISIBLE_DEVICES=1 python3 demo.py --config-file ../configs/COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml --input ../datasets/coco/annotations/BME_test/JPEGImages/323.jpg ../datasets/coco/annotations/BME_test/JPEGImages/329.jpg --output ./performance --opts MODEL.WEIGHTS ../output/model_0179999.pth

@@ -1,0 +1,449 @@
+{% extends '../layout.html' %}
+
+{% block body %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+<style>
+    #section{
+        text-align: center;
+        vertical-align: middle;
+        height: 6em;
+    }
+
+</style>
+
+<div  class="row no-gutters align-items-center">
+    <div class="col-12 col-lg-6 order-lg-2" style= "position:relative; display: inline-block; margin-top: 1em;">
+        <div id="midCol-title" style="font-size: 2em; text-align: center;"></div>
+        <div id="midCol-svg"></div>
+        <img src="" alt="" id="midCol-img" style="width: 100%; height: auto; margin-left: auto; margin-right: auto; display: block;">
+    </div>
+
+    <div class="col-6 col-lg-3 order-lg-1" id="leftCol" >
+        <div class="form-floating" style="margin:1em 1em">
+            <select id="inputGroup1" class="form-select" onchange="sendDemoId()">
+                <option selected>Select...</option>
+                {% for demo in demolist %}
+                <option value="{{demo.id}}">{{demo.name}}</option>
+                {%endfor%}
+            </select>
+            <label for="inputGroup1">Date</label>
+        </div>
+    </div>
+
+    <div class="col-6 col-lg-3 order-lg-3" id="rightCol">
+        <div class="toast" id="totalToast" role="alert" aria-live="assertive" aria-atomic="true" style="margin: auto; margin-top: 4em;">
+            <div class="toast-header">
+                <img src="" class="rounded mr-2" alt="">
+                <strong class="mr-auto text-align-center" id="totalToast-title"></strong>
+                <!-- <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button> -->
+            </div>
+            <div class="toast-body">
+                <p id="instanceId">ID</p>
+                <p id="clump">Clump</p>
+                <p id="stalk">Stalk</p>
+                <p id="spear">Spear</p>
+            </div>
+        </div>
+        <div id="clumpToast"></div>
+        <div id="elseToast"></div>
+    </div>
+</div>
+<div>
+    <div class="row no-gutters align items-center">
+        <div class="col-3" >
+            <form class="g-3 was-validated">
+                <div class="form-floating" style="margin: 1em 1em">
+                    <select class="form-select" id="floatingSelect-from" required aria-label="Floating label select example" onchange="selectionChange()">
+                        <option value="">...</option>
+                        {% for demo in demolist %}
+                        <option value="{{demo.id}}">{{demo.name}}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="floatingSelect-from">From</label>
+                </div>
+                <div class="form-floating" style="margin: 1em 1em">
+                    <select class="form-select" id="floatingSelect-until" required aria-label="Floating label select example" onchange="sendRange()">
+                        <option value="">...</option>
+                    </select>
+                    <label for="floatingSelect-until">Until</label>
+                </div>
+                <div class="form-floating" style="margin: 1em 1em">
+                    <select class="form-select" id="floatingSelect-section" required aria-label="Floating label select example" onchange="sendRange()">
+                        <option value="0">All</option>
+                        {% for section in sections %}
+                        <option value="{{section.id}}">{{section.name}}</option>
+                        {% endfor %}
+                    </select>
+                    <label for="floatingSelect-until">Area</label>
+                </div>
+            </form>
+        </div>
+        <div class="col-9" id="chartCol">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script>
+
+
+    var containerDiv = document.getElementById('leftCol')
+
+    for (var i = 0; i < 9; i++) {
+        var rowDiv = document.createElement('div');
+        rowDiv.className = 'row align-items-center';
+        rowDiv.id = 'section';
+        rowDiv.style.padding = '0 0.5rem';
+        for (var j = 0; j < 7 ; j++){
+            var colList = ['', 'A', 'B', 'C', 'D', 'E', 'F'];
+            var colDiv = document.createElement('div');
+            colDiv.className = 'col col-lg-1 d-grid';
+            colDiv.style.height = '90%';
+            colDiv.style.margin = 'auto';
+            colDiv.style.padding = '0'
+            if (i === 0 & j === 0) {
+                var divText = document.createTextNode('');
+                colDiv.style.alignContent = 'center'
+                colDiv.appendChild(divText);
+            }else if (j === 0){
+                var divText = document.createTextNode(i.toString());
+                colDiv.style.alignContent = 'center'
+                colDiv.appendChild(divText);
+            }else if (i === 0){
+                var divText = document.createTextNode(colList[j]);
+                colDiv.style.alignContent = 'center'
+                colDiv.appendChild(divText);
+            }
+            else {
+                var btn = document.createElement('button');
+                var btnText = document.createTextNode(colList[j] + i.toString());
+                btn.appendChild(btnText);
+                btn.type = 'button';
+                btn.className = 'btn btn-secondary';
+                btn.disabled = true;
+                btn.id = colList[j] + i.toString();
+                btn.style.padding = '0 0.3rem';
+                btn.setAttribute('data-bs-toggle', 'tooltip')
+                btn.setAttribute('data-bs-placement', 'right')
+                btn.setAttribute('title', btn.id+"&#013"+'peko')
+                btn.setAttribute('onclick', 'callBack('+colList[j] + i.toString()+')')
+                colDiv.append(btn);
+            }
+            rowDiv.append(colDiv);
+        }
+        containerDiv.append(rowDiv);
+    }
+
+    function sendDemoId(){
+        $.ajax({
+            url:'sendDemoId',
+            type:'POST',
+            data: {
+                demo: document.getElementById('inputGroup1').value,
+            },
+            success: function(context){
+                var sections = JSON.parse(context)['sections'];
+                var row = ['1', '2', '3', '4', '5', '6', '7', '8'], col = ['A', 'B', 'C', 'D', 'E', 'F']
+                for(let i = 0; i < col.length; i++){
+                    for(let j = 0; j < row.length; j++){
+                        var btn = document.getElementById(col[i]+row[j])
+                        if(sections.includes(col[i]+row[j])){
+                            btn.className = "btn btn-primary"
+                            btn.disabled = false;
+                        }
+                        else{
+                            btn.className = "btn btn-secondary"
+                            btn.disabled = true;
+                        }
+                    }
+                }
+            }
+        })
+    }
+
+    function rescale(counts, oldsize, newsize){
+        var newcounts = [];
+        for (var i = 0; i < counts.length; i++){
+            newcounts.push([(counts[i][0]*newsize[0])/oldsize[0], (counts[i][1]*newsize[1])/oldsize[1]])
+        }
+        return newcounts
+    }
+
+    // const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+    function callBack(id) {
+        $.ajax({
+            url:'',
+            type: 'POST',
+            data: {
+                id: id.id,
+                demo: document.getElementById('inputGroup1').value
+            },
+            success: function(context) {
+                var context = JSON.parse(context);
+                document.getElementById("midCol-title").innerHTML = context['section'];
+                var midCol = document.getElementById("midCol-svg")
+                midCol.innerHTML = '';
+                document.getElementById("clumpToast").innerHTML = '';
+                document.getElementById("elseToast").innerHTML = '';
+                document.getElementById("midCol-img").src = context['image'];
+                // await delay(120);
+                var img = document.getElementById("midCol-img");
+                var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', img.clientWidth);
+                svg.setAttribute('height', img.clientHeight);
+                svg.style.position = 'absolute';
+                var clump=0, stalk=0, spear=0;
+
+                for (var i = 0; i < context['instance'].length; i++){
+                    if (context['instance'][i]['class'] == 'clump'){
+                        var obj = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        obj.setAttribute('x', context['instance'][i]['bbox'][0]*img.clientWidth/img.naturalWidth);
+                        obj.setAttribute('y', context['instance'][i]['bbox'][1]*img.clientHeight/img.naturalHeight);
+                        obj.setAttribute('width', (context['instance'][i]['bbox'][2] - context['instance'][i]['bbox'][0])*img.clientWidth/img.naturalWidth);
+                        obj.setAttribute('height', (context['instance'][i]['bbox'][3] - context['instance'][i]['bbox'][1])*img.clientHeight/img.naturalHeight);
+                        obj.setAttribute('fill-opacity', 0)
+                        obj.setAttribute('stroke', 'blue')
+                        obj.setAttribute('stroke-width', 2)
+                        clump++
+                    }else {
+                        var obj = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+                        var mask = rescale(context['instance'][i]['mask'], [img.naturalHeight, img.naturalWidth], [img.clientHeight, img.clientWidth]);
+                        obj.setAttribute('points', mask)
+                        if (context['instance'][i]['class'] == 'stalk'){
+                            obj.setAttribute('fill', 'darkgreen')
+                            stalk++
+                        }else if (context['instance'][i]['class'] == 'spear') {
+                            obj.setAttribute('fill', 'red')
+                            spear++
+                        }
+                        else {
+                            obj.setAttribute('fill', 'cyan')
+                        }
+                        obj.setAttribute('fill-opacity', 0.5)
+                        obj.setAttribute('cursor', 'pointer');
+                    }
+                    obj.addEventListener('click', info.bind(this, context, i), false)
+                    obj.setAttribute('id', 'svg'+i.toString());
+                    svg.append(obj);
+                }
+                document.getElementById('totalToast-title').innerText = 'Zone: '+context['section'];
+                document.getElementById('instanceId').innerHTML = 'ID: '+context['id'].toString();
+                document.getElementById('clump').innerHTML = 'Clump: '+clump.toString();
+                document.getElementById('stalk').innerHTML = 'Stalk: '+stalk.toString();
+                document.getElementById('spear').innerHTML = 'Spear: '+spear.toString();
+                
+                // img.after(svg)
+                midCol.append(svg)
+                $('#totalToast').toast({
+                    autohide: false,
+                })
+                $('#totalToast').toast('show')
+            }
+        });
+    }
+
+    function info(context, i) {
+        var pred_class = context['instance'][i]['class'];
+        var score = context['instance'][i]['score'];
+        var height = context['instance'][i]['height']
+        var width = context['instance'][i]['width']
+        var scale = context['instance'][i]['scale']
+        
+        var rightCol = document.getElementById('rightCol')
+        var lenClump = $('#clump').length;
+        var lenElse = $('#elseToast').children().length;
+
+        var toastdiv = document.createElement('div')
+        toastdiv.className = 'toast'
+        toastdiv.id = pred_class;
+        toastdiv.style.margin = 'auto'
+        toastdiv.style.marginTop = '2em'
+        toastdiv.setAttribute('role', 'alert')
+        toastdiv.setAttribute('aria-live', 'assertive')
+        toastdiv.setAttribute('aria-atomic', 'true')
+        var toastheaderdiv = document.createElement('div')
+        toastheaderdiv.className = 'toast-header'
+        var strong = document.createElement('strong')
+        strong.className = 'mr-auto'
+        strong.innerHTML = pred_class
+        var btn = document.createElement('button')
+        btn.type = 'button'
+        btn.className = 'ml-2 mb-1 close'
+        btn.setAttribute('data-dismiss', 'toast')
+        btn.setAttribute('aria-label', 'Close')
+        var span = document.createElement('span')
+        span.setAttribute('aria-hidden', 'true')
+        span.innerHTML = '&times;'
+        btn.append(span)
+        toastheaderdiv.append(strong)
+        // if (pred_class != 'clump'){
+        //     toastheaderdiv.append(btn)
+        // }
+        var toastbodydiv = document.createElement('div')
+        toastbodydiv.className = 'toast-body'
+        var p_score = document.createElement('p')
+        p_score.innerHTML = 'Score: ' + score.toFixed(4)*100 + ' %'
+        var p_height = document.createElement('p')
+        if (pred_class == 'clump'){
+            p_height.innerHTML = 'Height: ' + (height*scale).toFixed(2).toString() + ' mm'
+        } else {
+            p_height.innerHTML = 'Length: ' + (height*scale).toFixed(2).toString() + ' mm'
+        }
+        var p_width = document.createElement('p')
+        p_width.innerHTML = 'Width: ' + (width*scale).toFixed(2).toString() + ' mm'
+        toastbodydiv.append(p_score)
+        toastbodydiv.append(p_height)
+        toastbodydiv.append(p_width)
+        if (pred_class == 'clump'){
+            let [stalk_in_clump, spear_in_clump] = asparagusCount(context, i);
+            let p_stalk_in_clump = document.createElement('p')
+            p_stalk_in_clump.innerHTML = 'Stalks in this clump: ' + stalk_in_clump.toString()
+            let p_spear_in_clump = document.createElement('p')
+            p_spear_in_clump.innerHTML = 'Spears in this clump: ' + spear_in_clump.toString()
+            toastbodydiv.append(p_stalk_in_clump)
+            toastbodydiv.append(p_spear_in_clump)
+        }
+        toastdiv.append(toastheaderdiv)
+        toastdiv.append(toastbodydiv)
+        var clumpToast = document.getElementById('clumpToast')
+        var elseToast = document.getElementById('elseToast')
+        if (pred_class=='clump'){
+            $('#clumpToast').empty()
+            $('#clumpToast').append(toastdiv)
+            $('.toast').toast({
+                autohide: false,
+            })
+            $('.toast').toast('show')
+
+        }else {
+            if (lenElse > 0) {
+                $('#elseToast').empty()
+            }
+            $('#elseToast').append(toastdiv)
+            $('.toast').toast({
+                autohide: false,
+            })
+            $('.toast').toast('show')
+        }
+        // clumpToast.append(toastdiv)
+        
+    }
+
+    function asparagusCount(context, i) {
+        var clump_xmin = context['instance'][i]['bbox'][0], clump_xmax = context['instance'][i]['bbox'][2];
+        var stalk=0, spear=0;
+        for (let i = 0; i < context['instance'].length; i++){
+            let classs = context['instance'][i]['class'];
+            let xmin = context['instance'][i]['bbox'][0];
+            let xmax = context['instance'][i]['bbox'][2];
+
+            if ((clump_xmax > xmax) && (xmin > clump_xmin)){
+                if (classs == 'stalk'){stalk++}
+                if (classs == 'spear'){spear++}
+            }else if((xmax > clump_xmin) && (clump_xmin > xmin)){
+                if (classs == 'stalk'){stalk++}
+                if (classs == 'spear'){spear++}
+            }else if ((xmax > clump_xmax) && (clump_xmax > xmin)){
+                if (classs == 'stalk'){stalk++}
+                if (classs == 'spear'){spear++}
+            }
+        }
+        return [stalk, spear]
+    }
+
+    function selectionChange(){
+        var fromValue = document.getElementById('floatingSelect-from').value;
+        var untilSelect = document.getElementById('floatingSelect-until');
+        var demorange = {{ demorange|safe }};
+        untilSelect.options.length = 0;
+        if(fromValue){
+            for(let i = 0; i < demorange.length; i++){
+                if(i+2 > fromValue){
+                    var option = document.createElement("option");
+                    option.value = demorange[i][0];
+                    option.text = demorange[i][1];
+                    untilSelect.append(option);
+                }
+                else if (i+2 == fromValue){
+                    var option = document.createElement("option");
+                    option.value = "";
+                    option.text = "...";
+                    untilSelect.append(option);
+                }
+            }
+        }
+        else{
+            var option = document.createElement("option");
+            option.value = "";
+            option.text = "...";
+            untilSelect.append(option);
+        }
+        
+    }
+
+    function sendRange(){
+        $.ajax({
+            url: 'sendRange',
+            type: 'POST',
+            data: {
+                fromValue: document.getElementById('floatingSelect-from').value,
+                untilValue: document.getElementById('floatingSelect-until').value,
+                section: document.getElementById('floatingSelect-section').value
+            },
+            success: function(context){
+                var context = JSON.parse(context);
+                document.getElementById('chartCol').innerHTML = '<canvas id="myChart"></canvas>';
+                var ctx = document.getElementById('myChart').getContext('2d');
+                var chart = new Chart(ctx, {
+                    // The type of chart we want to create
+                    type: 'bar',
+
+                    // The data for our dataset
+                    data: {
+                        labels: context['labels'],
+                        datasets: [{
+                            label: 'Clump',
+                            backgroundColor: 'rgb(255, 99, 132)',
+                            borderColor: 'rgb(255, 99, 132)',
+                            fill: false,
+                            data: context['clumps']
+                        },
+                        {
+                            label: 'Stalk',
+                            backgroundColor: 'rgb(237, 170, 97)',
+                            borderColor: 'rgb(237, 170, 97)',
+                            fill: false,
+                            data: context['stalks']
+                        },
+                        {
+                            label: 'Spear',
+                            backgroundColor: 'rgb(181, 242, 107)',
+                            borderColor: 'rgb(181, 242, 107)',
+                            fill: false,
+                            data: context['spears']
+                        }]
+                    },
+                    // Configuration options go here
+                    options: {
+                        tooltips: {
+                            enabled: true,
+                            intersect: false,
+                        },
+                        legend: {
+                            position: 'right',
+                            align: 'center',
+                            onHover: 'pointer',
+                        }
+                    }
+                });
+            }
+        })
+        
+    }
+
+    
+</script>
+
+{% endblock %}
