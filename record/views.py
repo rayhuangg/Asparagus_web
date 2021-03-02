@@ -34,10 +34,20 @@ def index(request):
             level = 'danger'
         context[section.name] = {'section': section.name, 'imagelist':ImageList.objects.filter(section__name=section.name)[:4]}
         levels[section.name] = level
-    frontview = FrontView.objects.latest
+    frontview = FrontView.objects.latest()
     return render(request, 'record/record.html', {'context': context, 'frontview': frontview, 'levels': json.dumps(levels)})
 
+def refreshFront(request):
+    if request.method == 'POST':
+        frontview = FrontView.objects.latest()
+        return HttpResponse(frontview.image.url)
 
+def demoProgress(request):
+    if request.method == 'POST':
+        with open('monitor/progress.txt', 'r') as progress:
+            content = progress.readlines()
+        [now, total] = content[0].split()
+        return HttpResponse(json.dumps({'now': int(now), 'total': int(total)}))
 
 @csrf_exempt
 def side(request):

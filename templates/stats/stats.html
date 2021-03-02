@@ -3,7 +3,7 @@
 {% block body %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
 <div>
-    <div class="row no-gutters align items-center">
+    <div class="row no-gutters align items-center" style="margin-top: 1rem;">
         <div class="col-3" >
             <form class="g-3 was-validated">
                 <div class="form-floating" style="margin: 1em 1em">
@@ -94,21 +94,21 @@
                             backgroundColor: 'rgb(255, 99, 132)',
                             borderColor: 'rgb(255, 99, 132)',
                             fill: false,
-                            data: context['clumps']
+                            data: context['clumps'],
                         },
                         {
                             label: 'Stalk',
                             backgroundColor: 'rgb(237, 170, 97)',
                             borderColor: 'rgb(237, 170, 97)',
                             fill: false,
-                            data: context['stalks']
+                            data: context['stalks'],
                         },
                         {
                             label: 'Spear',
                             backgroundColor: 'rgb(181, 242, 107)',
                             borderColor: 'rgb(181, 242, 107)',
                             fill: false,
-                            data: context['spears']
+                            data: context['spears'],
                         }]
                     },
                     // Configuration options go here
@@ -121,7 +121,29 @@
                             position: 'right',
                             align: 'center',
                             onHover: 'pointer',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Statistics of Asparagus',
+                            fontSize: 20,
+                        },
+                        scales: {
+                            yAxes: [{
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'Number of instances (pieces)',
+                                    fontSize: 16,
+                                }
+                            }],
+                            xAxes: [{
+                                scaleLabel: {
+                                    display: true,
+                                    labelString: 'Detection (YMD_hms)',
+                                    fontSize: 16,
+                                }
+                            }]
                         }
+                        
                     }
                 });
             }

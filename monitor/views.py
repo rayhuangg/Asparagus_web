@@ -124,9 +124,9 @@ def checkRange(request):
 
 def get_latest():
     url_set = []
-    for i in range(1,49):
+    for i in range(1,145):
         try:
-            url_set.append([i, ImageList.objects.filter(section=i).latest().image.path])
+            url_set.append([i, ImageList.objects.filter(section__id=i).latest().image.path])
         except:
             pass
     return url_set
@@ -162,6 +162,10 @@ def demo(request):
 
         demo_model = Demo()
         demo_model.save()
+
+        with open('monitor/progress.txt', 'w') as progress:
+            progress.writelines('0 0')
+        pro = 0
         for sec_id, path in tqdm.tqdm(inputs):
             # print('start')
             img = read_image(path, format="BGR")
@@ -170,8 +174,10 @@ def demo(request):
             # print('finish pred')
             pred_classes = predictions['instances'].pred_classes.cpu().numpy()
             pred_scores = predictions['instances'].scores.cpu().numpy()
-            pred_boxes = np.asarray(predictions["instances"].pred_boxes)
-            pred_masks = predictions["instances"].pred_masks.cpu().numpy()
+            pred_boxes = np.asarray(predictions["instances"].pred_boxes.to('cpu'))
+            # pred_boxes = np.asarray(predictions["instances"].pred_boxes)
+            pred_masks = np.asarray(predictions["instances"].pred_masks.to('cpu'))
+            # pred_masks = predictions["instances"].pred_masks.cpu().numpy()
 
             pred_all = []
             for i in range(len(pred_classes)):
@@ -224,4 +230,7 @@ def demo(request):
                 
                 instance = Instance(predicted_class=class_id[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=ResultList.objects.all().latest().id)
                 instance.save()
+            pro += 1
+            with open('monitor/progress.txt', 'w') as progress:
+                progress.writelines(str(pro)+' '+str(len(inputs)))
     return HttpResponse('Success')

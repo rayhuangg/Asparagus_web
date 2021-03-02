@@ -6,6 +6,7 @@ urlpatterns = [
     path('', views.index, name=''),
     path('side/', views.side),
     path('front/', views.front),
-    # path('demo/', views.demo),
+    path('refreshFront', views.refreshFront),
+    path('demoProgress', views.demoProgress),
 
 ]
