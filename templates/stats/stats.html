@@ -43,21 +43,27 @@
         var fromValue = document.getElementById('floatingSelect-from').value;
         var untilSelect = document.getElementById('floatingSelect-until');
         var demorange = {{ demorange|safe }};
+        var latestDemo = demorange[demorange.length - 1][0]
+        console.log(fromValue)
+        console.log(untilSelect)
+        console.log(latestDemo)
+        console.log(demorange)
         untilSelect.options.length = 0;
         if(fromValue){
-            for(let i = 0; i < demorange.length; i++){
-                if(i+2 > fromValue){
-                    var option = document.createElement("option");
-                    option.value = demorange[i][0];
-                    option.text = demorange[i][1];
-                    untilSelect.append(option);
+            var option = document.createElement("option");
+            option.value = "";
+            option.text = "...";
+            untilSelect.append(option);
+            for(let i = fromValue; i <= latestDemo; i++){
+                var option = document.createElement("option");
+                option.value = i;
+                for(let j = 0; j < demorange.length; j++){
+                    if (demorange[j][0] == i){
+                        option.text = demorange[j][1]
+                    }
                 }
-                else if (i+2 == fromValue){
-                    var option = document.createElement("option");
-                    option.value = "";
-                    option.text = "...";
-                    untilSelect.append(option);
-                }
+                // option.text = demorange[i-fromValue][1];
+                untilSelect.append(option);
             }
         }
         else{

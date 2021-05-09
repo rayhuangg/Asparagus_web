@@ -124,7 +124,7 @@ def checkRange(request):
 
 def get_latest():
     url_set = []
-    for i in range(1,145):
+    for i in range(1,218):
         try:
             url_set.append([i, ImageList.objects.filter(section__id=i).latest().image.path])
         except:
@@ -174,14 +174,23 @@ def demo(request):
             # print('finish pred')
             pred_classes = predictions['instances'].pred_classes.cpu().numpy()
             pred_scores = predictions['instances'].scores.cpu().numpy()
-            pred_boxes = np.asarray(predictions["instances"].pred_boxes.to('cpu'))
-            # pred_boxes = np.asarray(predictions["instances"].pred_boxes)
-            pred_masks = np.asarray(predictions["instances"].pred_masks.to('cpu'))
-            # pred_masks = predictions["instances"].pred_masks.cpu().numpy()
+            # try:
+            #     pred_boxes = np.asarray(predictions["instances"].pred_boxes.to('cpu'))
+            # except:
+            #     pass
+            pred_boxes = np.asarray(predictions["instances"].pred_boxes)
+            # try:
+            #     pred_masks = np.asarray(predictions["instances"].pred_masks.to('cpu'))
+            # except:
+            #     pass
+            pred_masks = predictions["instances"].pred_masks.cpu().numpy()
 
             pred_all = []
             for i in range(len(pred_classes)):
-                pred_all.append([pred_classes[i], pred_scores[i], pred_boxes[i], pred_masks[i]])
+                try:
+                    pred_all.append([pred_classes[i], pred_scores[i], pred_boxes[i], pred_masks[i]])
+                except:
+                    pass
             pred_all = sorted(pred_all, key=lambda x: x[0])
 
             pred_classes, pred_scores, pred_boxes, pred_masks = [], [], [], []

@@ -28,7 +28,7 @@
             </select>
             <label for="inputGroup1">Date</label>
         </div>
-        <div id="btns" style="height:40rem; overflow: auto; overflow-x:hidden;"></div>
+        <div id="btns" style="height:45rem; overflow: auto; overflow-x:hidden;"></div>
     </div>
 
     <div class="col-6 col-lg-3 order-lg-3" id="rightCol">
@@ -92,17 +92,17 @@
 
     var containerDiv = document.getElementById('btns')
 
-    for (var i = 0; i < 25; i++) {
+    for (var i = 0; i < 37; i++) {
         var rowDiv = document.createElement('div');
         rowDiv.className = 'row no-gutters align-items-center';
         rowDiv.id = 'section';
-        rowDiv.style.padding = '0 0.3rem';
+        rowDiv.style.padding = '0 0.25rem';
         for (var j = 0; j < 7 ; j++){
             var colList = ['', 'A', 'B', 'C', 'D', 'E', 'F'];
             var colDiv = document.createElement('div');
             colDiv.className = 'col col-lg-1 d-grid';
             colDiv.style.height = '90%';
-            colDiv.style.margin = 'auto';
+            colDiv.style.margin = '0 0.5rem';
             colDiv.style.padding = '0'
             if (i === 0 & j === 0) {
                 var divText = document.createTextNode('');
@@ -125,7 +125,7 @@
                 btn.className = 'btn btn-secondary';
                 btn.disabled = true;
                 btn.id = colList[j] + i.toString();
-                btn.style.padding = '0 0.3rem';
+                btn.style.padding = '0 0.25rem';
                 btn.setAttribute('data-bs-toggle', 'tooltip')
                 btn.setAttribute('data-bs-placement', 'right')
                 btn.setAttribute('title', btn.id+"&#013"+'peko')
@@ -148,7 +148,7 @@
                 var sections = JSON.parse(context)['sections'];
                 var col = ['A', 'B', 'C', 'D', 'E', 'F']
                 for(let i = 0; i < col.length; i++){
-                    for(let j = 1; j < 25; j++){
+                    for(let j = 1; j < 37; j++){
                         var btn = document.getElementById(col[i]+String(j))
                         if(sections.includes(col[i]+String(j))){
                             btn.className = "btn btn-primary"

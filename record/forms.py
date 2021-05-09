@@ -16,19 +16,22 @@ from .models import Section, ImageList, FrontView
 #         return data
     
 class ImageListForm(forms.ModelForm):
+    section = forms.ModelChoiceField(queryset=Section.objects.all(), to_field_name='name')
     def __init__(self, *args, **kwargs):
         super(ImageListForm, self).__init__(*args, **kwargs)
         self.fields['name'].required = False
         self.fields['date'].required = False
+        self.fields['focus'].required = False
     class Meta:
         model = ImageList
-        fields = '__all__'
+        fields = ['section', 'name', 'date', 'image', 'focus']
 
 class FrontViewForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(FrontViewForm, self).__init__(*args, **kwargs)
         self.fields['name'].required = False
         self.fields['date'].required = False
+        self.fields['focus'].required = False
         
     class Meta:
         model = FrontView

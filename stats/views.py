@@ -20,6 +20,7 @@ def checkRange(request):
         untilValue = request.POST['untilValue']
         section = int(request.POST['section'])
         demolist = [ d for d in Demo.objects.all() if int(fromValue) <= d.id <= int(untilValue)]
+        # print(fromValue, untilValue, demolist)
         labels = [ d.name for d in demolist ]
         clumps, stalks, spears = [], [], []
         if section == 0:

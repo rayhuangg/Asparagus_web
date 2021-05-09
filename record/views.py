@@ -32,7 +32,7 @@ def index(request):
                 level = 'primary'
         except:
             level = 'danger'
-        context[section.name] = {'section': section.name, 'imagelist':ImageList.objects.filter(section__name=section.name)[:4]}
+        context[section.name] = {'section': section.name, 'imagelist':ImageList.objects.filter(section__name=section.name)[:3]}
         levels[section.name] = level
     frontview = FrontView.objects.latest()
     return render(request, 'record/record.html', {'context': context, 'frontview': frontview, 'levels': json.dumps(levels)})

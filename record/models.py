@@ -25,6 +25,7 @@ class ImageList(models.Model):
     date = models.DateTimeField(default=now)
     # date.editable = True
     image = models.ImageField(upload_to=uppath)
+    focus = models.FloatField(default=0.0)
 
     def __str__(self):
         return self.name + '_' + str(self.id)
@@ -37,6 +38,7 @@ class FrontView(models.Model):
     name = models.CharField(max_length=100, default=str(datetime.now().strftime('%Y%m%d_%H%M%S')))
     date = models.DateTimeField(default=now)
     image = models.ImageField(upload_to='record/front')
+    focus = models.FloatField(default=0.0)
 
     def __str__(self):
         return self.name

@@ -26,9 +26,10 @@ SECRET_KEY = '#qr$i8z0=m8$e4)a%v44bj+6!5q)t6n0ph8)jdmlfsh7icm25d'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['192.168.50.212',
-                 '140.112.183.138',
-                 'sslserver001']
+ALLOWED_HOSTS = ['localhost',
+                '192.168.50.200',
+                '140.112.183.138',
+                 ]
 
 
 # Application definition
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     'monitor.apps.MonitorConfig',
     'record.apps.RecordConfig',
     'stats.apps.StatsConfig',
+    'lidar.apps.LidarConfig',
     'sorl.thumbnail',
     'celery_progress',
 ]
@@ -136,3 +138,5 @@ STATIC_ROOT = os.path.join(os.path.dirname(BASE_DIR), "static_cdn")
 MEDIA_ROOT = BASE_DIR
 
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10485760
+
+DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
