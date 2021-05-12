@@ -1,0 +1,50 @@
+{% extends '../layout.html' %}
+
+{% block body %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+
+<div>
+    <form action="/lidar/scan/" method="post" enctype="multipart/form-data" style="display: None;">
+        {% csrf_token %}
+        {{ form.as_table }}
+        <input type="submit" value="Submit">
+    </form>
+    <div class="row" style="align-items: middle;">
+        <div class="col-3">
+            <img src="{{scan.left_image.image.url}}" style="width: 100%;">
+        </div>
+        <div class="col-6">
+            <canvas id="myChart"></canvas>
+        </div>
+        <div class="col-3">
+            <img src="{{scan.right_image.image.url}}" style="width: 100%;">
+        </div>
+    </div>
+    
+</div>
+
+<script>
+    var points = {{ data|safe }}
+    console.log(points)
+    var ctx = document.getElementById('myChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Scatter lidar points',
+                data: points
+            }]
+        },
+        options: {
+            scales: {
+                xAxes: [{
+                    type: 'linear',
+                    position: 'bottom'
+                }]
+            }
+        }
+    })
+
+</script>
+
+{% endblock %}
