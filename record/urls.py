@@ -8,5 +8,6 @@ urlpatterns = [
     path('front/', views.front),
     path('refreshFront', views.refreshFront),
     path('demoProgress', views.demoProgress),
-
+    path('showdemoRange', views.showdemoRange),
+    path('preview', views.preview),
 ]

@@ -1,14 +1,18 @@
 from django.shortcuts import render, reverse, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, HttpResponseRedirect
+from django.utils.timezone import get_current_timezone
 from .models import Section, ImageList, FrontView
 from .forms import ImageListForm, FrontViewForm
 import sys
+import os
 from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from monitor.models import Demo, ResultList
 import datetime
 import json
+import ftplib
+import MySQLdb
 
 # Create your views here.
 
@@ -24,9 +28,9 @@ def index(request):
         try:
             latest_img = ImageList.objects.filter(section__name=section.name)[0]
             timedelta = now - latest_img.date
-            if timedelta.days >= 2:
+            if timedelta.days >= 1:
                 level = 'warning'
-                if timedelta.days >= 4:
+                if timedelta.days >= 2:
                     level = 'danger'
             else:
                 level = 'primary'
@@ -34,8 +38,14 @@ def index(request):
             level = 'danger'
         context[section.name] = {'section': section.name, 'imagelist':ImageList.objects.filter(section__name=section.name)[:3]}
         levels[section.name] = level
-    frontview = FrontView.objects.latest()
-    return render(request, 'record/record.html', {'context': context, 'frontview': frontview, 'levels': json.dumps(levels)})
+    frontview = FrontView.objects.get(id=399)
+    # return render(request, 'record/record.html', {'context': context, 'frontview': frontview, 'levels': json.dumps(levels)})
+    return render(request, 'record/record.html', {'frontview': frontview, 'levels': json.dumps(levels)})
+
+# def fetchRecord(request):
+#     if request.method == 'POST':
+#         section = request.POST['section']
+#         images = ImageList.objects.filter(section__name=section.name)[:3]
 
 def refreshFront(request):
     if request.method == 'POST':
@@ -49,14 +59,31 @@ def demoProgress(request):
         [now, total] = content[0].split()
         return HttpResponse(json.dumps({'now': int(now), 'total': int(total)}))
 
+def preview(request):
+    if request.method == 'POST':
+        context = []
+        sec = request.POST['section']
+        imgs = ImageList.objects.filter(section__name=sec)[:3]
+        for img in imgs:
+            context.append({'name': img.name, 'date': img.date.strftime('%Y.%m.%d %H:%M:%S'), 'id': img.id, 'url': img.image.url})
+        return HttpResponse(json.dumps({'context': context}))
+
 @csrf_exempt
 def side(request):
     form = ImageListForm()
     if request.method == 'POST':
         form = ImageListForm(request.POST, request.FILES)
+        if request.POST['section'][0] == 'A' or request.POST['section'][0] == 'D':
+            side = 'right'
+        else:
+            side = 'left'
         # form.save()
         if form.is_valid():
             form.save()
+            image = ImageList.objects.latest().image.path
+            print(image)
+            print(type(image))
+            uploadtosql(request.POST['section'], image, side)
         else:
             print(form.errors)
     else:
@@ -79,3 +106,35 @@ def front(request):
         
     return render(request, 'record/record.html', {'form': form})
 
+def uploadtosql(location, image, side):
+    # try:
+    camera_ID = datetime.datetime.now().strftime('%Y%m%d_%H%M%S_')
+    ftp = ftplib.FTP()
+    FTPIP= "140.112.94.126"
+    FTPPORT= 3837
+    USERNAME= "asparagus"
+    USERPWD= "asparagus303"
+    ftp.connect(FTPIP, FTPPORT)
+    ftp.login(USERNAME,USERPWD)
+    print("[FTP] Login...")
+    print(ftp.getwelcome())
+    bufsize = 1024
+    # file_handler = open(("/home/pi/Desktop/connect_right/right/"+ location +".jpg"),'rb')
+    file_handler = open(image, 'rb')
+    ftp.cwd('/Drive_control/' + side + '/')
+    ftp.storbinary('STOR %s' % os.path.basename(camera_ID + location +'.jpg'),file_handler,bufsize)
+    ftp.set_debuglevel(0)
+    file_handler.close()
+    ftp.quit()
+    print("ftp_126 upload OK")
+    # except:
+    #     print("upload error")
+
+def showdemoRange(request):
+    if request.method == 'POST':
+        fr, un = request.POST['from'], request.POST['until']
+        imageset = ImageList.objects.filter(date__range=[fr ,un])
+        data = []
+        for image in imageset:
+            data.append({'url': image.image.url, 'date': image.date.strftime("%Y/%m/%d, %H:%M:%S"), 'id': image.id, 'section': image.section.name})
+        return HttpResponse(json.dumps({'data': data}))
