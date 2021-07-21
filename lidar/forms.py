@@ -23,6 +23,6 @@ from .models import Scan
 class ScanForm(forms.Form):
     name = forms.CharField(label='Name of this scan', max_length=100, initial=str(datetime.now().strftime('%Y%m%d_%H%M%S')), required=False)
     date = forms.DateTimeField(label='Date created', initial=now, required=False)
-    left_section = forms.ModelChoiceField(queryset=Section.objects.all(), to_field_name='name')
-    right_section = forms.ModelChoiceField(queryset=Section.objects.all(), to_field_name='name')
+    left_section = forms.ModelChoiceField(queryset=Section.objects.all(), to_field_name='name', required=False)
+    right_section = forms.ModelChoiceField(queryset=Section.objects.all(), to_field_name='name', required=False)
     points = forms.JSONField()
