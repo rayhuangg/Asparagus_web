@@ -1,9 +1,18 @@
 {% extends '../layout.html' %}
 
 {% block body %}
+<style>
+    .col{
+        text-align: center;
+        vertical-align: middle;
+        margin: auto;
+        font-size: 1.3rem;
+    }
+</style>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
 <div>
-    <div class="row no-gutters align items-center" style="margin-top: 1rem;">
+    <div class="row no-gutters align items-center" style="margin: auto; margin-top: 1em;">
         <div class="col-3" >
             <form class="g-3 was-validated">
                 <div class="form-floating" style="margin: 1em 1em">
@@ -21,7 +30,7 @@
                     </select>
                     <label for="floatingSelect-until">Until</label>
                 </div>
-                <div class="form-floating" style="margin: 1em 1em">
+                <!-- <div class="form-floating" style="margin: 1em 1em">
                     <select class="form-select" id="floatingSelect-section" required aria-label="Floating label select example" onchange="sendRange()">
                         <option value="0">All</option>
                         {% for section in sections %}
@@ -29,25 +38,95 @@
                         {% endfor %}
                     </select>
                     <label for="floatingSelect-until">Area</label>
+                </div> -->
+                <div class="form-floating" style="margin: 1em 1em">
+                    <select class="form-select" id="floatingSelect-type" required aria-label="Floating label select example" onchange="chooseType()">
+                        <option value="">...</option>
+                        <option value="0">Clump</option>
+                        <option value="1">Stalk</option>
+                        <option value="2">Spear</option>
+                    </select>
+                    <label for="floatingSelect-until">Type</label>
                 </div>
             </form>
         </div>
-        <div class="col-9" id="chartCol">
-            <canvas id="myChart"></canvas>
+        <div class="col-9">
+            <div class="container" id="btns" style="background-color: rgb(250, 239, 225); border-radius: 1em; padding: 1em; margin-bottom: 5rem; height:50rem; overflow: auto; overflow-x:auto;"></div>
         </div>
+        <!-- <div class="col-9" id="chartCol">
+            <canvas id="myChart"></canvas>
+        </div> -->
     </div>
 </div>
 
 <script>
+    var containerDiv = document.getElementById('btns');
+
+    for (var i = 0; i < 37; i++) {
+        var rowDiv = document.createElement('div');
+        rowDiv.className = 'row align-items-center';
+        rowDiv.style.height = '6em'
+        rowDiv.id = 'section';
+        for (var j = 0; j < 8 ; j++){
+            var colList = ['', 'A', 'B', 'C', 'D', 'E', 'F'];
+            var colDiv = document.createElement('div');
+            colDiv.className = 'col d-grid';
+            colDiv.style.height = '90%'
+            if (i === 0 & j === 0) {
+                var divText = document.createTextNode('Sum');
+                colDiv.style.alignContent = 'center'
+                colDiv.style.fontWeight = 'bold'
+                colDiv.appendChild(divText);
+            }else if (j === 7 ){
+                var divText = document.createTextNode('');
+                colDiv.style.alignContent = 'center'
+                colDiv.appendChild(divText);
+            }else if (j === 0){
+                var divText = document.createTextNode(i.toString());
+                colDiv.style.alignContent = 'center'
+                colDiv.style.fontWeight = 'bold'
+                colDiv.appendChild(divText);
+            }else if (i === 0){
+                var btn = document.createElement('button');
+                btn.textContent = 0
+                btn.type = 'button';
+                btn.className = 'btn btn-outline-primary';
+                btn.id = colList[j];
+                btn.style.fontSize = '1.5rem';
+                btn.setAttribute('data-clumps', 0)
+                btn.setAttribute('data-stalks', 0)
+                btn.setAttribute('data-spears', 0)
+                colDiv.style.fontWeight = 'bold'
+                colDiv.append(colList[j])
+                colDiv.append(btn);
+            }
+            else {
+                var btn = document.createElement('button');
+                btn.textContent = 0
+                btn.type = 'button';
+                btn.className = 'btn btn-outline-primary';
+                btn.id = colList[j] + i.toString();
+                btn.style.fontSize = '1.5rem';
+                btn.setAttribute('data-clumps', 0)
+                btn.setAttribute('data-stalks', 0)
+                btn.setAttribute('data-spears', 0)
+                colDiv.append(colList[j] + i.toString())
+                colDiv.append(btn);
+            }
+            rowDiv.append(colDiv);
+        }
+        containerDiv.append(rowDiv);
+    };
+
     function selectionChange(){
         var fromValue = document.getElementById('floatingSelect-from').value;
         var untilSelect = document.getElementById('floatingSelect-until');
         var demorange = {{ demorange|safe }};
         var latestDemo = demorange[demorange.length - 1][0]
-        console.log(fromValue)
-        console.log(untilSelect)
-        console.log(latestDemo)
-        console.log(demorange)
+        // console.log(fromValue)
+        // console.log(untilSelect)
+        // console.log(latestDemo)
+        // console.log(demorange)
         untilSelect.options.length = 0;
         if(fromValue){
             var option = document.createElement("option");
@@ -76,86 +155,140 @@
     }
 
     function sendRange(){
+        document.getElementById('btns').style.opacity = '50%'
         $.ajax({
             url: 'sendRange',
             type: 'POST',
             data: {
                 fromValue: document.getElementById('floatingSelect-from').value,
                 untilValue: document.getElementById('floatingSelect-until').value,
-                section: document.getElementById('floatingSelect-section').value
             },
             success: function(context){
+                
+                var allBtns = document.getElementsByTagName('button')
+                // console.log(allBtns)
+                for (let btn of allBtns){
+                    btn.textContent = '0'
+                }
                 var context = JSON.parse(context);
-                document.getElementById('chartCol').innerHTML = '<canvas id="myChart"></canvas>';
-                var ctx = document.getElementById('myChart').getContext('2d');
-                var chart = new Chart(ctx, {
-                    // The type of chart we want to create
-                    type: 'bar',
+                // var type = document.getElementById('floatingSelect-type').value
 
-                    // The data for our dataset
-                    data: {
-                        labels: context['labels'],
-                        datasets: [{
-                            label: 'Clump',
-                            backgroundColor: 'rgb(255, 99, 132)',
-                            borderColor: 'rgb(255, 99, 132)',
-                            fill: false,
-                            data: context['clumps'],
-                        },
-                        {
-                            label: 'Stalk',
-                            backgroundColor: 'rgb(237, 170, 97)',
-                            borderColor: 'rgb(237, 170, 97)',
-                            fill: false,
-                            data: context['stalks'],
-                        },
-                        {
-                            label: 'Spear',
-                            backgroundColor: 'rgb(181, 242, 107)',
-                            borderColor: 'rgb(181, 242, 107)',
-                            fill: false,
-                            data: context['spears'],
-                        }]
-                    },
-                    // Configuration options go here
-                    options: {
-                        tooltips: {
-                            enabled: true,
-                            intersect: false,
-                        },
-                        legend: {
-                            position: 'right',
-                            align: 'center',
-                            onHover: 'pointer',
-                        },
-                        title: {
-                            display: true,
-                            text: 'Statistics of Asparagus',
-                            fontSize: 20,
-                        },
-                        scales: {
-                            yAxes: [{
-                                scaleLabel: {
-                                    display: true,
-                                    labelString: 'Number of instances (pieces)',
-                                    fontSize: 16,
-                                }
-                            }],
-                            xAxes: [{
-                                scaleLabel: {
-                                    display: true,
-                                    labelString: 'Detection (YMD_hms)',
-                                    fontSize: 16,
-                                }
-                            }]
-                        }
-                        
+                for ( var [type, data] of Object.entries(context)){
+                    for ( var [k, v] of Object.entries(data)){
+                        let btn = document.getElementById(k)
+                        btn.setAttribute('data-'+type, v.toString())
+                        let col = document.getElementById(k[0])
+                        let colCount = parseInt(col.getAttribute('data-'+type))
+                        col.setAttribute('data-'+type, (colCount + v).toString())
                     }
-                });
+                }
+                document.getElementById('btns').style.opacity = '100%'
             }
         })
         
     }
+
+    function chooseType(){
+        var type = document.getElementById('floatingSelect-type').value
+        var allBtns = document.getElementsByTagName('button')
+        for (let btn of allBtns){
+            btn.textContent = '0'
+            btn.textContent = type == 0 ? btn.getAttribute('data-clumps') : ( type == 1 ? btn.getAttribute('data-stalks') : btn.getAttribute('data-spears'))
+            btn.className = btn.textContent > 10 ? 'btn btn-danger' : 'btn btn-outline-primary'
+        }
+    }
+
+    // function sendRange(){
+    //     $.ajax({
+    //         url: 'sendRange',
+    //         type: 'POST',
+    //         data: {
+    //             fromValue: document.getElementById('floatingSelect-from').value,
+    //             untilValue: document.getElementById('floatingSelect-until').value,
+    //             section: document.getElementById('floatingSelect-section').value
+    //         },
+    //         success: function(context){
+    //             var context = JSON.parse(context);
+    //             document.getElementById('chartCol').innerHTML = '<canvas id="myChart"></canvas>';
+    //             var ctx = document.getElementById('myChart').getContext('2d');
+    //             var chart = new Chart(ctx, {
+    //                 // The type of chart we want to create
+    //                 type: 'bar',
+
+    //                 // The data for our dataset
+    //                 data: {
+    //                     labels: context['labels'],
+    //                     datasets: [{
+    //                         label: 'Clump',
+    //                         backgroundColor: 'rgb(255, 99, 132)',
+    //                         borderColor: 'rgb(255, 99, 132)',
+    //                         fill: false,
+    //                         data: context['clumps'],
+    //                     },
+    //                     {
+    //                         label: 'Stalk',
+    //                         backgroundColor: 'rgb(237, 170, 97)',
+    //                         borderColor: 'rgb(237, 170, 97)',
+    //                         fill: false,
+    //                         data: context['stalks'],
+    //                     },
+    //                     {
+    //                         label: 'Spear',
+    //                         backgroundColor: 'rgb(181, 242, 107)',
+    //                         borderColor: 'rgb(181, 242, 107)',
+    //                         fill: false,
+    //                         data: context['spears'],
+    //                     }]
+    //                 },
+    //                 // Configuration options go here
+    //                 options: {
+    //                     tooltips: {
+    //                         enabled: true,
+    //                         intersect: false,
+    //                     },
+    //                     legend: {
+    //                         position: 'right',
+    //                         align: 'center',
+    //                         onHover: 'pointer',
+    //                         labels: {
+    //                             fontSize: 24
+    //                         }
+    //                     },
+    //                     title: {
+    //                         display: true,
+    //                         text: 'Statistics of Asparagus',
+    //                         fontSize: 32,
+    //                     },
+    //                     scales: {
+    //                         yAxes: [{
+    //                             scaleLabel: {
+    //                                 display: true,
+    //                                 labelString: 'Number of instances',
+    //                                 fontSize: 24,
+    //                             },
+    //                             ticks:{
+    //                                 fontSize: 16
+    //                             }
+    //                         }],
+    //                         xAxes: [{
+    //                             scaleLabel: {
+    //                                 display: true,
+    //                                 labelString: 'Date time',
+    //                                 fontSize: 24,
+    //                             },
+    //                             ticks :{
+    //                                 fontSize :16
+    //                             }
+    //                         }],
+                            
+    //                     }
+                        
+    //                 }
+    //             });
+    //         }
+    //     })
+        
+    // }
 </script>
 
 {% endblock %}
