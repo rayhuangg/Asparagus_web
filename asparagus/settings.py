@@ -29,6 +29,7 @@ DEBUG = True
 ALLOWED_HOSTS = ['localhost',
                 '192.168.50.200',
                 '140.112.183.138',
+                'digiag.bime.ntu.edu.tw'
                  ]
 
 
