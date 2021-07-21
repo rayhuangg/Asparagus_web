@@ -32,13 +32,13 @@ def scan(request):
         if form.is_valid():
             # name = form.cleaned_data['name']
             # date = form.cleaned_data['date']
-            left_section = form.cleaned_data['left_section']
-            right_section = form.cleaned_data['right_section']
+            # left_section = form.cleaned_data['left_section']
+            # right_section = form.cleaned_data['right_section']
             points = [float(point) for point in dict(request.POST)['points']]
             # print(points)
 
-            left_image = ImageList.objects.filter(section__name=left_section).latest()
-            right_image = ImageList.objects.filter(section__name=right_section).latest()
+            left_image = ImageList.objects.filter(section__name='test').latest()
+            right_image = ImageList.objects.filter(section__name='test').latest()
             scan = Scan(left_image=left_image, right_image=right_image, points=points)
             scan.save()
         else:
