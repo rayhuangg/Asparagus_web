@@ -12,3 +12,4 @@ detectron/config/**
 detectron/dataset/**
 db.sqlite3
 progress.txt
+nohup.out
