@@ -33,14 +33,14 @@
 
     <div class="col-6 col-lg-3 order-lg-3" id="rightCol">
         <div class="toast" id="totalToast" role="alert" aria-live="assertive" aria-atomic="true" style="margin: auto; margin-top: 4em;">
-            <div class="toast-header">
+            <div class="toast-header" style="font-size: x-large;">
                 <img src="" class="rounded mr-2" alt="">
                 <strong class="mr-auto text-align-center" id="totalToast-title"></strong>
                 <!-- <button type="button" class="ml-2 mb-1 close" data-dismiss="toast" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button> -->
             </div>
-            <div class="toast-body">
+            <div class="toast-body" style="font-size: large;">
                 <p id="instanceId">ID</p>
                 <p id="clump">Clump</p>
                 <p id="stalk">Stalk</p>
@@ -230,7 +230,7 @@
                         obj.setAttribute('id', 'svg'+i.toString());
                         svg.append(obj);
                     }
-                    document.getElementById('totalToast-title').innerText = 'Zone: '+context['section'];
+                    document.getElementById('totalToast-title').innerText = context['section'];
                     document.getElementById('instanceId').innerHTML = 'ID: '+context['id'].toString();
                     document.getElementById('clump').innerHTML = 'Clump: '+clump.toString();
                     document.getElementById('stalk').innerHTML = 'Stalk: '+stalk.toString();
@@ -282,11 +282,13 @@
         span.innerHTML = '&times;'
         btn.append(span)
         toastheaderdiv.append(strong)
+        toastheaderdiv.style.fontSize = 'x-large'
         // if (pred_class != 'clump'){
         //     toastheaderdiv.append(btn)
         // }
         var toastbodydiv = document.createElement('div')
         toastbodydiv.className = 'toast-body'
+        toastbodydiv.style.fontSize ='large'
         var p_score = document.createElement('p')
         p_score.innerHTML = 'Score: ' + score.toFixed(4)*100 + ' %'
         var p_height = document.createElement('p')
@@ -296,7 +298,7 @@
             p_height.innerHTML = 'Length: ' + (height*scale).toFixed(2).toString() + ' mm'
         }
         var p_width = document.createElement('p')
-        p_width.innerHTML = 'Width: ' + (width*scale).toFixed(2).toString() + ' mm'
+        p_width.innerHTML = 'Width: ' + (width*scale*1.9).toFixed(2).toString() + ' mm'
         toastbodydiv.append(p_score)
         toastbodydiv.append(p_height)
         toastbodydiv.append(p_width)
