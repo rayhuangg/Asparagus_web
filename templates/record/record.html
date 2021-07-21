@@ -41,17 +41,88 @@
     </div>
 
     <div class="row align-items-center" style="height: auto;">
-        <div class="col">
+        <!-- <div class="col">
             <button class="btn btn-danger btn-lg" id="demo" onclick="Demo()" style="margin: 1em">
                 <span class="spinner-border" id="demoSpan" role="status" aria-hidden="true" style="margin: 0em 1em 0em 0em; display: none"></span>
                 <span id="demoWord" style="font-size: 2rem;">Demo</span>
             </button>
+        </div> -->
+        <div class="col">
+            <button class="btn btn-danger btn-lg" id="demo" style="margin: 1em" data-bs-toggle="collapse" data-bs-target="#collapseDemo" aria-expanded="false" aria-controls="collapseDemo">
+            Demo
+            </button>
+        </div>
+        
+    </div>
+    <div class="row">
+        <div class="col">
+            <div class="collapse" id="collapseDemo" style="margin: 0rem 5rem;">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-3">
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">From</span>
+                                    <input type="datetime-local" id="datetimeStart" onchange="showdemoRange()">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">Until</span>
+                                    <input type="datetime-local" id="datetimeEnd" onchange="showdemoRange()">
+                                </div>
+                                <div class="input-group mb-3">
+                                    <span class="input-group-text">IDs for demo</span>
+                                    <textarea id="idsDemo" cols="30" rows="10" class="form-control" readonly></textarea>
+                                </div>
+                                <div>
+                                    <button id="demoGo" class="btn btn-primary btn-lg" onclick="Demo()">Go</button>
+                                </div>
+                            </div>
+                            <div class="col-9" id="demolist">
+                                <div class="row" style="background-color: rgb(250, 239, 225); border-radius: 1em; padding: 1em; margin-bottom: 1rem; height:50rem; overflow: auto; overflow-x:auto;">
+                                    <div class="col"></div>
+                                    <div class="col"></div>
+                                    <div class="col"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <div class="progress" style="height: 2rem; margin: 1rem 15rem 2rem 15rem;">
         <div id="demoProgress" class="progress-bar" role="progressbar" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100" style="font-size: 1.5rem;"></div>
     </div>
-    {% for key, value in context.items %}
+
+    <div class="modal fade" id="modal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="container-fluid">
+
+                        <div class="row" id="content1">
+                            <div class="col-8">
+                                <img class="img-fluid" id="modalImg" src="" alt="None" style="width: auto; max-height: 90%;">
+                            </div>
+                            <div class="col-4" style="text-align: left;">
+                                <p id="name">Name: </p>
+                                <p id="date">Date: </p>
+                                <p id="id">ID: </p>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- {% for key, value in context.items %}
 
     <div class="modal fade" id="{{value.section}}" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
@@ -77,15 +148,11 @@
                     </div>
                     
                 </div>
-            <!-- <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary">Save changes</button>
-            </div> -->
             </div>
         </div>
     </div>
 
-    {% endfor %}
+    {% endfor %} -->
 
     <div class="container" id="btns" style="background-color: rgb(250, 239, 225); border-radius: 1em; padding: 1em; margin-bottom: 5rem; height:50rem; overflow: auto; overflow-x:auto;"></div>
 
@@ -138,32 +205,171 @@
                 btn.id = colList[j] + i.toString();
                 btn.style.fontSize = '1.5rem';
                 btn.setAttribute('data-bs-toggle', 'modal')
-                btn.setAttribute('data-bs-target', '#' + colList[j] + i.toString())
-                // btn.setAttribute('onclick', 'onClick('+colList[j] + i.toString()+')')
+                btn.setAttribute('data-bs-target', '#modal')
+                btn.setAttribute('data-bs-section', colList[j] + i.toString())
                 colDiv.append(btn);
             }
             rowDiv.append(colDiv);
         }
         containerDiv.append(rowDiv);
-    }
+    };
 
+    var modal = document.getElementById('modal')
+    modal.addEventListener('show.bs.modal', e=>{
+        
+        let btn = e.relatedTarget
+        let section = btn.getAttribute('data-bs-section')
+        console.log(section)
+        $.ajax({
+            url: 'preview',
+            type: 'POST',
+            data: {
+                section: section
+            },
+            success: (context)=>{
+                var context = JSON.parse(context)['context'];
+                console.log(context)
+                document.getElementById('exampleModalLabel').textContent = section;
+                for (let i = 0; i < context.length; i++){
+                    if (i == 0){
+                        var firstRow = modal.querySelector('.modal-body #content1')
+                        firstRow.querySelector('#modalImg').src = context[i].url
+                        firstRow.querySelector('#name').textContent = 'Name: ' + context[i].name
+                        firstRow.querySelector('#date').textContent = 'Date: ' + context[i].date
+                        firstRow.querySelector('#id').textContent = 'ID: ' + context[i].id
+                        var spare = firstRow.cloneNode(true)
+                        var container = modal.querySelector('.modal-body .container-fluid')
+                        while(container.firstChild){
+                            container.removeChild(container.lastChild)
+                        }
+                        container.append(spare)
+                    }
+                    else{
+                        var clone = spare.cloneNode(true)
+                        clone.id = 'content' + i.toString();
+                        clone.querySelector('#modalImg').src = context[i].url
+                        clone.querySelector('#name').textContent = 'Name: ' + context[i].name
+                        clone.querySelector('#date').textContent = 'Date: ' + context[i].date
+                        clone.querySelector('#id').textContent = 'ID: ' + context[i].id
+                        container.append(clone)
+                    }
+
+                }
+
+            },
+        });
+    })
+
+
+    // function Demo() {
+    //     document.getElementById('demoSpan').style.display = '';
+    //     document.getElementById('demoWord').innerText = 'Identifying...';
+    //     $.ajax({
+    //         url:'../monitor/demo/',
+    //         type: 'POST',
+    //         data: {
+    //             demo: true,
+    //         },
+    //         success: function() {
+    //             document.getElementById('demoSpan').style.display = '';
+    //             document.getElementById('demo').innerText = 'Demo';
+    //         },
+            
+    //     });
+    // };
 
     function Demo() {
-        document.getElementById('demoSpan').style.display = '';
-        document.getElementById('demoWord').innerText = 'Identifying...';
+        // document.getElementById('demoGO').innerHTML = 'Identifying...';
+        var idsDemo = document.getElementById('idsDemo').value
+        console.log(idsDemo)
         $.ajax({
             url:'../monitor/demo/',
             type: 'POST',
             data: {
-                demo: true,
+                demo: idsDemo,
             },
             success: function() {
-                document.getElementById('demoSpan').style.display = '';
-                document.getElementById('demo').innerText = 'Demo';
+                document.getElementById('demoGo').style.display = 'Go';
             },
             
         });
-    }
+    };
+
+    function showdemoRange() {
+        var from = document.getElementById('datetimeStart').value
+        var until = document.getElementById('datetimeEnd').value
+        // console.log(from)
+        // console.log(until)
+        if (from !== '' && until !== ''){
+            $.ajax({
+                url: 'showdemoRange',
+                type: 'POST',
+                data: {
+                    from: from,
+                    until: until,
+                },
+                success: function(data){
+                    var data = JSON.parse(data)['data']
+                    // console.log(data)
+                    var demolist = document.getElementById('demolist').querySelectorAll('div.col')
+                    demolist.forEach(e => e.innerHTML='')
+                    for (let i = 0; i < data.length; i++){
+                        let node = demolist[i%3]
+                        let tn = document.createElement('img')
+                        // console.log(data[i])
+                        tn.src = data[i]['url']
+                        tn.id = data[i]['id']
+                        tn.role = 'button'
+                        tn.style.objectFit = 'contain'
+                        tn.style.width = '100%'
+                        tn.style.hight = '100%'
+                        tn.setAttribute('data-bs-toggle', 'tooltip')
+                        tn.setAttribute('data-bs-placement', 'top')
+                        tn.setAttribute('title','section: ' + data[i]['section'] + '\n' + 'date: ' + data[i]['date'] +'\n' + 'id: ' + data[i]['id'].toString())
+                        tn.onclick = function () {adjustIdsDemo(tn.id)}
+                        let tndiv = document.createElement('div')
+                        tndiv.append(tn)
+                        node.append(tndiv)
+                    }
+                    var idsDemo = document.getElementById('idsDemo')
+                    var ids = []
+                    for (j = 0; j < data.length; j++){
+                        ids.push(data[j]['id'])
+                    }
+                    idsDemo.value = ids.toString()
+                }
+            })
+        }
+    };
+
+    function adjustIdsDemo(id){
+        var idsDemo = document.getElementById('idsDemo').value.split(',')
+        var image = document.getElementById(id.toString())
+        if (idsDemo.includes(id)) {
+            image.style.filter = 'brightness(50%)'
+            idsDemo = idsDemo.filter(e => e !== id)
+            // console.log(idsDemo)
+        }
+        else {
+            image.style.filter = 'brightness(100%)'
+            idsDemo.push(id.toString())
+            idsDemo.sort().reverse()
+        }
+        document.getElementById('idsDemo').value = idsDemo.toString()
+    };
+
+    function fetchRecord(section) {
+        $.ajax({
+            url: 'fetchRecord',
+            type: 'POST',
+            data: {
+                section: section,
+            },
+            success: function (){
+                modal = document.getElementById('recordModal');
+            }
+        })
+    };
 
     function refresh(){
         $.ajax({
@@ -176,7 +382,7 @@
                 document.getElementById('FrontViewImg').src = url;
             }
         })
-    }
+    };
 
     function progress(){
         $.ajax({
@@ -199,18 +405,18 @@
                 }
             }
         })
-    }
+    };
 
-    window.onload = function() {
-        function timeout(){
-            setTimeout(function (){
-                refresh()
-                progress()
-                timeout();
-            }, 1000);
-        }
-        timeout();
-    }
+    // window.onload = function() {
+    //     function timeout(){
+    //         setTimeout(function (){
+    //             refresh()
+    //             progress()
+    //             timeout();
+    //         }, 1000);
+    //     }
+    //     timeout();
+    // }
 
 </script>
 
