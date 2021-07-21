@@ -24,6 +24,7 @@ from PIL import Image
 from skimage import measure, morphology
 from scipy import ndimage
 from pycocotools import mask
+from plantcv import plantcv as pcv
 
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
@@ -134,10 +135,10 @@ def get_latest():
 def setup_cfg():
     # load config from file and command-line arguments
     cfg = get_cfg()
-    cfg.merge_from_file("detectron/configs/COCO-InstanceSegmentation/mask_rcnn_X_101_32x8d_FPN_3x.yaml")
+    cfg.merge_from_file("detectron/output/iter2.yaml")
     # cfg.merge_from_list(args.opts)
     # Set score_threshold for builtin models
-    cfg.MODEL.WEIGHTS = "detectron/output/model_0269999.pth"
+    cfg.MODEL.WEIGHTS = "detectron/output/iter2.pth"
     cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
     cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = 0.5
@@ -153,7 +154,12 @@ def demo(request):
     if request.method == 'POST':
         mp.set_start_method("spawn", force=True)
         setup_logger(name="fvcore")
-        inputs = get_latest()
+        # inputs = get_latest()
+        idsDemo = [ int(id) for id in request.POST['demo'].split(',')]
+        inputs = []
+        for id in idsDemo:
+            img = ImageList.objects.get(id=id)
+            inputs.append([img.section.id, img.image.path])
         cfg = setup_cfg()
 
         demo = VisualizationDemo(cfg)
@@ -226,16 +232,26 @@ def demo(request):
                     for j, seg in enumerate(segmentation):
                         if j % 10 == 1:
                             new_segmentation.append(seg)
-                    segmentation = new_segmentation
-                    skeleton = skeletonization(pred_masks[i]).tolist()
-                    height = np.count_nonzero(skeleton) ## Height of instance
+                    # segmentation = new_segmentation
+                    # skeleton = skeletonization(pred_masks[i]).tolist()
+                    # height = np.count_nonzero(skeleton) ## Height of instance
                     distance_transformation = ndimage.distance_transform_edt(pred_masks[i])
                     widths = []
-                    for j, row in enumerate(skeleton):
-                        for k, p in enumerate(row):
-                            if p:
-                                widths.append(distance_transformation[j, k])
-                    width = round((sum(widths)/len(widths)), 2) ## Width of instance
+                    # for j, row in enumerate(skeleton):
+                    #     for k, p in enumerate(row):
+                    #         if p:
+                    #             widths.append(distance_transformation[j, k])
+                    # width = round((sum(widths)/len(widths)), 2) ## Width of instance
+                    for row in distance_transformation:
+                        width = max(row)
+                        if width != 0:
+                            widths.append(width)
+                    width = max(widths)
+                    skeleton = pcv.morphology.skeletonize(mask=pred_masks[i])
+                    segmented_img, obj = pcv.morphology.segment_skeleton(skel_img=skeleton)
+                    labeled_img = pcv.morphology.segment_path_length(segmented_img=segmented_img, objects=obj, label="default")
+                    path_lengths = pcv.outputs.observations['default']['segment_path_length']['value']
+                    height = max(path_lengths)
                 
                 instance = Instance(predicted_class=class_id[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=ResultList.objects.all().latest().id)
                 instance.save()
