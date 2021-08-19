@@ -13,6 +13,7 @@ import datetime
 import json
 import ftplib
 import MySQLdb
+import pytz
 
 # Create your views here.
 
@@ -21,16 +22,16 @@ def index(request):
 
     context = {}
     levels = {}
-    now = datetime.datetime.now(datetime.timezone.utc)
+    now = datetime.datetime.now().astimezone(pytz.timezone('Asia/Taipei'))
 
     sections = Section.objects.all()
     for section in sections:
         try:
-            latest_img = ImageList.objects.filter(section__name=section.name)[0]
-            timedelta = now - latest_img.date
-            if timedelta.days >= 1:
+            latest_img = ImageList.objects.filter(section__name=section.name).latest()
+            timedelta = now - latest_img.date.astimezone(pytz.timezone('Asia/Taipei'))
+            if timedelta.total_seconds() >= 3600*3:
                 level = 'warning'
-                if timedelta.days >= 2:
+                if timedelta.total_seconds() >= 3600*24:
                     level = 'danger'
             else:
                 level = 'primary'
@@ -65,7 +66,7 @@ def preview(request):
         sec = request.POST['section']
         imgs = ImageList.objects.filter(section__name=sec)[:3]
         for img in imgs:
-            context.append({'name': img.name, 'date': img.date.strftime('%Y.%m.%d %H:%M:%S'), 'id': img.id, 'url': img.image.url})
+            context.append({'name': img.name, 'date': img.date.astimezone(pytz.timezone('Asia/Taipei')).strftime('%Y.%m.%d %H:%M:%S'), 'id': img.id, 'url': img.image.url})
         return HttpResponse(json.dumps({'context': context}))
 
 @csrf_exempt
@@ -81,8 +82,6 @@ def side(request):
         if form.is_valid():
             form.save()
             image = ImageList.objects.latest().image.path
-            print(image)
-            print(type(image))
             uploadtosql(request.POST['section'], image, side)
         else:
             print(form.errors)
@@ -116,8 +115,8 @@ def uploadtosql(location, image, side):
     USERPWD= "asparagus303"
     ftp.connect(FTPIP, FTPPORT)
     ftp.login(USERNAME,USERPWD)
-    print("[FTP] Login...")
-    print(ftp.getwelcome())
+    # print("[FTP] Login...")
+    # print(ftp.getwelcome())
     bufsize = 1024
     # file_handler = open(("/home/pi/Desktop/connect_right/right/"+ location +".jpg"),'rb')
     file_handler = open(image, 'rb')
@@ -126,7 +125,7 @@ def uploadtosql(location, image, side):
     ftp.set_debuglevel(0)
     file_handler.close()
     ftp.quit()
-    print("ftp_126 upload OK")
+    # print("ftp_126 upload OK")
     # except:
     #     print("upload error")
 
