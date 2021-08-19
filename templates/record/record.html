@@ -70,6 +70,13 @@
                                     <input type="datetime-local" id="datetimeEnd" onchange="showdemoRange()">
                                 </div>
                                 <div class="input-group mb-3">
+                                    
+                                    <div class="input-group-text">
+                                        <input id="straw" class="form-check-input mt-0" type="checkbox" value="" style="margin-right: 1rem;">
+                                        Straw detection
+                                    </div>
+                                </div>
+                                <div class="input-group mb-3">
                                     <span class="input-group-text">IDs for demo</span>
                                     <textarea id="idsDemo" cols="30" rows="10" class="form-control" readonly></textarea>
                                 </div>
@@ -169,6 +176,7 @@
     var containerDiv = document.getElementById('btns');
 
     var levels = {{ levels|safe }};
+    // console.log(levels)
 
     for (var i = 0; i < 37; i++) {
         var rowDiv = document.createElement('div');
@@ -219,7 +227,7 @@
         
         let btn = e.relatedTarget
         let section = btn.getAttribute('data-bs-section')
-        console.log(section)
+        // console.log(section)
         $.ajax({
             url: 'preview',
             type: 'POST',
@@ -230,6 +238,19 @@
                 var context = JSON.parse(context)['context'];
                 console.log(context)
                 document.getElementById('exampleModalLabel').textContent = section;
+                if (context.length == 0){
+                    var firstRow = modal.querySelector('.modal-body #content1')
+                    firstRow.querySelector('#modalImg').src = null
+                    firstRow.querySelector('#name').textContent = null
+                    firstRow.querySelector('#date').textContent = null
+                    firstRow.querySelector('#id').textContent = null
+                    var spare = firstRow.cloneNode(true)
+                    var container = modal.querySelector('.modal-body .container-fluid')
+                    while(container.firstChild){
+                        container.removeChild(container.lastChild)
+                    }
+                    container.append(spare)
+                }
                 for (let i = 0; i < context.length; i++){
                     if (i == 0){
                         var firstRow = modal.querySelector('.modal-body #content1')
@@ -281,12 +302,16 @@
     function Demo() {
         // document.getElementById('demoGO').innerHTML = 'Identifying...';
         var idsDemo = document.getElementById('idsDemo').value
+        var strawDetection = document.getElementById('straw').checked
         console.log(idsDemo)
+        console.log(strawDetection)
+        document.getElementById('demoGo').innerText = 'Starting...'
         $.ajax({
             url:'../monitor/demo/',
             type: 'POST',
             data: {
                 demo: idsDemo,
+                straw: strawDetection
             },
             success: function() {
                 document.getElementById('demoGo').style.display = 'Go';
@@ -410,7 +435,7 @@
     // window.onload = function() {
     //     function timeout(){
     //         setTimeout(function (){
-    //             refresh()
+    //             // refresh()
     //             progress()
     //             timeout();
     //         }, 1000);
