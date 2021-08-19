@@ -9,7 +9,7 @@
         {{ form.as_table }}
         <input type="submit" value="Submit">
     </form>
-    <div class="row" style="align-items: middle;">
+    <!-- <div class="row" style="align-items: middle;">
         <div class="col-3">
             <img src="{{scan.left_image.image.url}}" style="width: 100%;">
         </div>
@@ -19,7 +19,16 @@
         <div class="col-3">
             <img src="{{scan.right_image.image.url}}" style="width: 100%;">
         </div>
+    </div> -->
+    <div class="container" style="margin-bottom: 2rem; margin-top: 2rem;">
+        <div class="row" style="align-items: middle;">
+            <img src="{{scan.front_image.image.url}}"style="width: 100%">
+        </div>
+        <div class="row" style="align-items: middle;">
+            <canvas id="myChart"></canvas>
+        </div>
     </div>
+    
     
 </div>
 
