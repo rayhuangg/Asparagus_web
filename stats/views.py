@@ -7,11 +7,12 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 import json
 from record.models import ImageList, Section
 from monitor.models import Instance, ResultList, Demo
+import pytz
 
 # Create your views here.
 def index(request):
     demos = [d for d in Demo.objects.all()] # {{ demolist.name }} form
-    demo_range = [ [d.id, d.name] for d in Demo.objects.all() ]
+    demo_range = [ [d.id, d.name, d.date.astimezone(pytz.timezone('Asia/Taipei')).strftime('%B %d, %Y, %I:%M %p')] for d in Demo.objects.all() ]
     sections = [ s for s in Section.objects.all()]
     return render(request, 'stats/stats.html', context={'demolist': demos[::-1], 'demorange': demo_range[::-1], 'sections': sections})
 
