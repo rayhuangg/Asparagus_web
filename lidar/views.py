@@ -7,12 +7,12 @@ from .forms import ScanForm
 import sys
 from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
-from record.models import ImageList
+from record.models import ImageList, FrontView
 import math
 
 # Create your views here.
 def index(request):
-    scan = Scan.objects.filter(id=16)[0]
+    scan = Scan.objects.latest()
     points = scan.points
     data = []
     angle = -45
@@ -36,10 +36,10 @@ def scan(request):
             # right_section = form.cleaned_data['right_section']
             points = [float(point) for point in dict(request.POST)['points']]
             # print(points)
-
+            front_image = FrontView.objects.latest()
             left_image = ImageList.objects.filter(section__name='test').latest()
             right_image = ImageList.objects.filter(section__name='test').latest()
-            scan = Scan(left_image=left_image, right_image=right_image, points=points)
+            scan = Scan(front_image=front_image, left_image=left_image, right_image=right_image, points=points)
             scan.save()
         else:
             print(form.errors)
