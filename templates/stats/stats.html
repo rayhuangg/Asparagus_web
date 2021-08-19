@@ -19,7 +19,7 @@
                     <select class="form-select" id="floatingSelect-from" required aria-label="Floating label select example" onchange="selectionChange()">
                         <option value="">...</option>
                         {% for demo in demolist %}
-                        <option value="{{demo.id}}">{{demo.name}}</option>
+                        <option value="{{demo.id}}">ID: {{demo.id}}, Date: {{demo.date}}</option>
                         {% endfor %}
                     </select>
                     <label for="floatingSelect-from">From</label>
@@ -123,10 +123,10 @@
         var untilSelect = document.getElementById('floatingSelect-until');
         var demorange = {{ demorange|safe }};
         var latestDemo = demorange[demorange.length - 1][0]
-        // console.log(fromValue)
-        // console.log(untilSelect)
-        // console.log(latestDemo)
-        // console.log(demorange)
+        console.log(fromValue)
+        console.log(untilSelect)
+        console.log(latestDemo)
+        console.log(demorange)
         untilSelect.options.length = 0;
         if(fromValue){
             var option = document.createElement("option");
@@ -138,10 +138,13 @@
                 option.value = i;
                 for(let j = 0; j < demorange.length; j++){
                     if (demorange[j][0] == i){
-                        option.text = demorange[j][1]
+                        option.text = 'ID: ' + demorange[j][0] + ', Date: ' + demorange[j][2]
                     }
                 }
                 // option.text = demorange[i-fromValue][1];
+                if (option.text == ''){
+                    option.text = 'Deleted'
+                }
                 untilSelect.append(option);
             }
         }
@@ -169,6 +172,9 @@
                 // console.log(allBtns)
                 for (let btn of allBtns){
                     btn.textContent = '0'
+                    btn.setAttribute('data-clumps', '0')
+                    btn.setAttribute('data-stalks', '0')
+                    btn.setAttribute('data-spearss', '0')
                 }
                 var context = JSON.parse(context);
                 // var type = document.getElementById('floatingSelect-type').value
