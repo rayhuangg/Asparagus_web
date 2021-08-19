@@ -48,18 +48,29 @@ def index(request):
         instances = Instance.objects.filter(resultlist=resultlist)
         image = ImageList.objects.get(id=image_id)
         context['image'] = image.image.url
-        scale = []
+        # calculate scale for each instance
+        # scale = []
+        # for instance in instances:
+        #     if instance.predicted_class == 'bar':
+        #         scale.append(instance.width)
+        # if scale == []:
+        #     scale.append(18)
+        # scale = 18/(sum(scale)/len(scale))  ## 20mm / length of pixel
+        scales = instances.filter(predicted_class='straw')
         for instance in instances:
-            if instance.predicted_class == 'bar':
-                scale.append(instance.width)
-        if scale == []:
-            scale.append(18)
-        scale = 18/(sum(scale)/len(scale))  ## 20mm / length of pixel
-        for instance in instances:
+            if instance.predicted_class != 'straw':
+                scale = closest_scale(scales, instance)
+                if scale != 0:
+                    scale = 10 / scale.width ## the width of straw is 18 mm, so 
+                else:
+                    scale = 0
+            else:
+                scale = instance.width
             context['instance'].append({'class': instance.predicted_class,
                                         'score': instance.score,
                                         'bbox': [instance.bbox_xmin, instance.bbox_ymin, instance.bbox_xmax, instance.bbox_ymax],
                                         'mask': instance.mask,
+                                        'area': cv2.contourArea(cv2.UMat(np.expand_dims(np.array(instance.mask).astype(np.float32), 1))),
                                         'height': instance.height,
                                         'width' : instance.width,
                                         'scale': scale})
@@ -69,6 +80,68 @@ def index(request):
     demo_range = [ [d.id, d.name] for d in Demo.objects.all() ]
     sections = [ s for s in Section.objects.all()]
     return render(request, 'monitor/monitor.html', context={'demolist': demos[::-1], 'demorange': demo_range[::-1], 'sections': sections})
+
+def downloadJSON(request, id):
+    if request.method == 'POST':
+        image = ImageList.objects.get(id=id).image.path
+        resultlist = ResultList.objects.filter(image__id=id).latest()
+        instances = Instance.objects.filter(resultlist=resultlist)
+        img_shape = cv2.imread(image).shape
+        img_height, img_width = img_shape[0], img_shape[1]
+        with open(image, 'rb') as img_file:
+            img_data = base64.b64encode(img_file.read()).decode("utf-8")
+        content = {
+        "version": "4.5.5",
+        "flags": {},
+        "shapes": [
+        ],
+        "imagePath": str(id) + '.' + image.split('.')[-1],
+        "imageData": img_data,
+        "imageHeight": img_height,
+        "imageWidth": img_width
+        }
+        for idx, instance in enumerate(instances):
+            if instance.predicted_class == 'clump':
+                shape = {
+                    "label": "clump",
+                    "points": [[instance.bbox_xmin, instance.bbox_ymin], [instance.bbox_xmax, instance.bbox_ymax]],
+                    "group_id": idx,
+                    "shape_type": "rectangle",
+                    "flags": {}
+                }
+            elif instance.predicted_class == 'stalk' or instance.predicted_class == 'spear':
+                mask = instance.mask
+                new_mask = []
+                if len(instance.mask) > 30:
+                    for k in range(0, len(mask), int(len(mask)/30)):
+                        new_mask.append(mask[k])
+                else:
+                    new_mask = mask
+                shape = {
+                    "label": instance.predicted_class,
+                    "points": new_mask,
+                    "group_id": idx,
+                    "shape_type": "polygon",
+                    "flags": {}
+                }
+            content["shapes"].append(shape)
+        
+        return HttpResponse(json.dumps(content, indent=2))
+    return HttpResponse(json.dumps({"PAIN": "PEKO"}))
+
+def closest_scale(scales, instance):
+    c_instance = [ (instance.bbox_xmax + instance.bbox_xmin)/2, (instance.bbox_ymax + instance.bbox_ymin)/2]
+    max_dist = np.inf
+    max_scale = 0
+    for scale in scales:
+        mask_scale = np.array(scale.mask)
+        c_scale = [np.mean(mask_scale[:, 0]), np.mean(mask_scale[:, 1])]
+        dist = (c_instance[0]-c_scale[0])**2 + (c_instance[1]-c_scale[1])**2
+        if dist < max_dist:
+            max_dist = dist
+            max_scale = scale
+    return max_scale
+
 
 def checkDemoId(request):
     if request.method == 'POST':
@@ -150,12 +223,77 @@ def skeletonization(pred_mask):
     skeleton = morphology.skeletonize(pred_mask)
     return skeleton
 
+def straw_detection(path):
+    img = cv2.imread(path)
+    sat = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)[:,:,1]
+    boxes, widths = [], []
+    # momo color
+    straw_momo = np.ones((len(sat), len(sat[0]))) * [sat > 100] * [img[:, :, 0] > 100]
+    label_momo = measure.label(straw_momo[0])
+    test_momo = {}
+    for i in range(len(label_momo)):
+        for j in range(len(label_momo[0])):
+            try:
+                test_momo[label_momo[i][j]] += 1
+            except:
+                test_momo[label_momo[i][j]] = 1
+    test_momo = {k: v for k, v in sorted(test_momo.items(), key=lambda item: item[1], reverse=True)}
+    test_momo.pop(0)
+    for k, v in test_momo.items():
+        # region larger than 1000
+        if v > 1000:
+            straw = np.ones((len(sat), len(sat[0]))) * [label_momo == k] *255
+            ret, thresh = cv2.threshold(np.float32(straw[0]), 127, 255, 0)
+            _, contours, _ = cv2.findContours(np.uint8(thresh), 1, 2)
+            areas = []
+            for contour in contours:
+                areas.append(cv2.contourArea(contour))
+            
+            cnt = contours[areas.index(max(areas))]
+            rect = cv2.minAreaRect(cnt)
+            box = cv2.boxPoints(rect)
+            box = np.int0(box)
+            width = min([((box[1][0] - box[0][0])**2 + (box[1][1] - box[0][1])**2)**0.5, ((box[1][0] - box[2][0])**2 + (box[1][1] - box[2][1])**2)**0.5])
+            boxes.append(box)
+            widths.append(width)
+    # blue color
+    straw_blue = np.ones((len(sat), len(sat[0]))) * [sat > 200] * [img[:, :, 2] > 100]
+    label_blue = measure.label(straw_blue[0])
+    test_blue = {}
+    for i in range(len(label_blue)):
+        for j in range(len(label_blue[0])):
+            try:
+                test_blue[label_blue[i][j]] += 1
+            except:
+                test_blue[label_blue[i][j]] = 1
+    test_blue = {k: v for k, v in sorted(test_blue.items(), key=lambda item: item[1], reverse=True)}
+    test_blue.pop(0)
+    for k, v in test_blue.items():
+        # region larger than 1000
+        if v > 1000:
+            straw = np.ones((len(sat), len(sat[0]))) * [label_blue == k] *255
+            ret, thresh = cv2.threshold(np.float32(straw[0]), 127, 255, 0)
+            _, contours, _ = cv2.findContours(np.uint8(thresh), 1, 2)
+            areas = []
+            for contour in contours:
+                areas.append(cv2.contourArea(contour))
+            cnt = contours[areas.index(max(areas))]
+            rect = cv2.minAreaRect(cnt)
+            box = cv2.boxPoints(rect)
+            box = np.int0(box)
+            width = min([((box[1][0] - box[0][0])**2 + (box[1][1] - box[0][1])**2)**0.5, ((box[1][0] - box[2][0])**2 + (box[1][1] - box[2][1])**2)**0.5])
+            boxes.append(box)
+            widths.append(width)
+    return boxes, widths
+
+
 def demo(request):
     if request.method == 'POST':
         mp.set_start_method("spawn", force=True)
         setup_logger(name="fvcore")
         # inputs = get_latest()
         idsDemo = [ int(id) for id in request.POST['demo'].split(',')]
+        straw = request.POST['straw']
         inputs = []
         for id in idsDemo:
             img = ImageList.objects.get(id=id)
@@ -168,6 +306,7 @@ def demo(request):
 
         demo_model = Demo()
         demo_model.save()
+        demo_id = demo_model.id
 
         with open('monitor/progress.txt', 'w') as progress:
             progress.writelines('0 0')
@@ -208,8 +347,9 @@ def demo(request):
 
             # print('start resultlist')
             image_id = ImageList.objects.filter(section_id=sec_id).latest().id
-            resultlist = ResultList(image_id=image_id, demo_id=Demo.objects.all().latest().id)
+            resultlist = ResultList(image_id=image_id, demo_id=demo_id)
             resultlist.save()
+            resultlist_id = resultlist.id
             # print('writing instances')
             for i in range(len(pred_classes)):
                 # print(class_id[pred_classes[i]])
@@ -247,14 +387,25 @@ def demo(request):
                         if width != 0:
                             widths.append(width)
                     width = max(widths)
-                    skeleton = pcv.morphology.skeletonize(mask=pred_masks[i])
-                    segmented_img, obj = pcv.morphology.segment_skeleton(skel_img=skeleton)
-                    labeled_img = pcv.morphology.segment_path_length(segmented_img=segmented_img, objects=obj, label="default")
-                    path_lengths = pcv.outputs.observations['default']['segment_path_length']['value']
-                    height = max(path_lengths)
+                    # skeleton = pcv.morphology.skeletonize(mask=pred_masks[i])
+                    props = measure.regionprops(pred_masks[i].astype(np.uint8))
+                    height = props[0].major_axis_length
+                    # segmented_img, obj = pcv.morphology.segment_skeleton(skel_img=skeleton)
+                    # labeled_img = pcv.morphology.segment_path_length(segmented_img=segmented_img, objects=obj, label="default")
+                    # path_lengths = pcv.outputs.observations['default']['segment_path_length']['value']
+                    # height = max(path_lengths)
                 
-                instance = Instance(predicted_class=class_id[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=ResultList.objects.all().latest().id)
+                instance = Instance(predicted_class=class_id[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=resultlist_id)
                 instance.save()
+            # straw detection
+            if straw == 'true':
+                straw_boxes, straw_widths = straw_detection(path)
+                for straw_box, straw_width in zip(straw_boxes, straw_widths):
+                    # print(straw_box)
+                    # print(straw_width)
+                    instance = Instance(predicted_class='straw', score=1, mask=straw_box.tolist(), width=straw_width, resultlist_id=resultlist_id)
+                    instance.save()
+
             pro += 1
             with open('monitor/progress.txt', 'w') as progress:
                 progress.writelines(str(pro)+' '+str(len(inputs)))
