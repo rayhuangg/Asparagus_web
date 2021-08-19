@@ -5,6 +5,7 @@ from .models import Scan
 class ScanAdmin(admin.ModelAdmin):
     fieldsets = [(None, {'fields': ['name']}),
                  (None, {'fields': ['date']}),
+                 (None, {'fields': ['front_image']}),
                  (None, {'fields': ['left_image']}),
                  (None, {'fields': ['right_image']}),
                  (None, {'fields': ['points']})
