@@ -11,7 +11,7 @@ class Demo(models.Model):
     date = models.DateTimeField(default=now)
 
     def __str__(self):
-        return self.name
+        return self.name + '_' + str(self.id)
 
     class Meta:
         ordering = ['-date']
@@ -31,14 +31,14 @@ class ResultList(models.Model):
     #     return resultlist
 
     def __str__(self):
-        return self.name
+        return self.name + '_' + str(self.id)
 
     class Meta:
         ordering = ['-date']
         get_latest_by = 'date'
 
 class Instance(models.Model):
-    predicted_class = models.CharField(max_length=100, choices=[('clump', 'Clump'), ('stalk', 'Stalk'), ('spear', 'Spear'), ('bar', 'Bar')])
+    predicted_class = models.CharField(max_length=100, choices=[('clump', 'Clump'), ('stalk', 'Stalk'), ('spear', 'Spear'), ('bar', 'Bar'), ('straw', 'Straw')])
     score = models.FloatField(default=0)
     bbox_xmin = models.IntegerField(default=0)
     bbox_ymin = models.IntegerField(default=0)
