@@ -12,7 +12,7 @@
 </style>
 
 <div  class="row no-gutters align-items-center">
-    <div class="col-12 col-lg-6 order-lg-2" style= "position:relative; display: inline-block; margin-top: 1em;">
+    <div class="col-12 col-lg-6 order-lg-2" style= "position:relative; display: inline-block; margin-top: 1rem;">
         <div id="midCol-title" style="font-size: 2em; text-align: center;"></div>
         <div id="midCol-svg"></div>
         <img src="" alt="" id="midCol-img" style="width: 100%; height: auto; margin-left: auto; margin-right: auto; display: block;">
@@ -23,7 +23,7 @@
             <select id="inputGroup1" class="form-select" onchange="sendDemoId()">
                 <option selected>Select...</option>
                 {% for demo in demolist %}
-                <option value="{{demo.id}}">{{demo.name}}</option>
+                <option value="{{demo.id}}">ID: {{demo.id}}, Date: {{demo.date}}</option>
                 {%endfor%}
             </select>
             <label for="inputGroup1">Date</label>
@@ -31,8 +31,8 @@
         <div id="btns" style="height:45rem; overflow: auto; overflow-x:hidden;"></div>
     </div>
 
-    <div class="col-6 col-lg-3 order-lg-3" id="rightCol">
-        <div class="toast" id="totalToast" role="alert" aria-live="assertive" aria-atomic="true" style="margin: auto; margin-top: 4em;">
+    <div class="col-6 col-lg-3 order-lg-3" id="rightCol" style="margin-bottom: 4rem;">
+        <div class="toast" id="totalToast" role="alert" aria-live="assertive" aria-atomic="true" style="margin: auto; margin-top: 4rem;">
             <div class="toast-header" style="font-size: x-large;">
                 <img src="" class="rounded mr-2" alt="">
                 <strong class="mr-auto text-align-center" id="totalToast-title"></strong>
@@ -45,6 +45,15 @@
                 <p id="clump">Clump</p>
                 <p id="stalk">Stalk</p>
                 <p id="spear">Spear</p>
+                <div class="row">
+                    <div class="col" style="padding-right: 0;">
+                        <a class="btn btn-primary" id="downloadimage" href="" target="_blank">Download image</a>
+                    </div>
+                    <div class="col" style="padding-right: 0;">
+                        <button class="btn btn-primary" id="downloadjson" data-imageid="" onclick="downloadJSON(this.getAttribute('data-imageid'))">Download json</button>
+                    </div>
+                </div>
+                
             </div>
         </div>
         <div id="clumpToast"></div>
@@ -135,6 +144,27 @@
             rowDiv.append(colDiv);
         }
         containerDiv.append(rowDiv);
+    }
+
+    function downloadImage(id){
+        fetch('download')
+    }
+
+    function downloadJSON(id){
+        fetch('downloadjson/' + id.toString() + '/', {method: 'POST'})
+        .then(res => {
+            return res.blob()
+        }).then(res => {
+            // console.log(res)
+            var url = window.URL.createObjectURL(res)
+            var a = document.createElement('a')
+            a.style.display = 'none'
+            a.href = url
+            a.download = id.toString() + '.json'
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+        })
     }
 
     function sendDemoId(){
@@ -235,6 +265,8 @@
                     document.getElementById('clump').innerHTML = 'Clump: '+clump.toString();
                     document.getElementById('stalk').innerHTML = 'Stalk: '+stalk.toString();
                     document.getElementById('spear').innerHTML = 'Spear: '+spear.toString();
+                    document.getElementById('downloadimage').href = context['image']
+                    document.getElementById('downloadjson').setAttribute('data-imageid', context['id'])
                     
                     // img.after(svg)
                     midCol.append(svg)
@@ -254,6 +286,7 @@
         var height = context['instance'][i]['height']
         var width = context['instance'][i]['width']
         var scale = context['instance'][i]['scale']
+        var area = context['instance'][i]['area']
         
         var rightCol = document.getElementById('rightCol')
         var lenClump = $('#clump').length;
@@ -293,15 +326,43 @@
         p_score.innerHTML = 'Score: ' + score.toFixed(4)*100 + ' %'
         var p_height = document.createElement('p')
         if (pred_class == 'clump'){
-            p_height.innerHTML = 'Height: ' + (height*scale).toFixed(2).toString() + ' mm'
-        } else {
-            p_height.innerHTML = 'Length: ' + (height*scale).toFixed(2).toString() + ' mm'
+            if (scale == 0){
+                p_height.innerHTML = 'Height: ' + (height).toFixed(2).toString() + ' px'
+            }
+            else{
+                p_height.innerHTML = 'Height: ' + (height*scale).toFixed(2).toString() + ' mm'
+            }
+        }else if(pred_class == 'straw'){
+            p_height.innerHTML = 'Height: none'
+
+        }else {
+            if (scale == 0){
+                p_height.innerHTML = 'Length: ' + (height).toFixed(2).toString() + ' px'
+            }
+            else{
+                p_height.innerHTML = 'Length: ' + (height*scale).toFixed(2).toString() + ' mm'
+            }
+            
         }
         var p_width = document.createElement('p')
-        p_width.innerHTML = 'Width: ' + (width*scale*1.9).toFixed(2).toString() + ' mm'
+        if (scale == 0){
+            p_width.innerHTML = 'Width: ' + (width*1.9).toFixed(2).toString() + ' px'
+        }else if (pred_class == 'straw'){
+            p_width.innerHTML = 'Width: ' + width.toFixed(2).toString() + ' px'
+
+        }else {
+            p_width.innerHTML = 'Width: ' + (width*scale*1.9).toFixed(2).toString() + ' mm'
+        }
+        var p_area = document.createElement('p')
+        if (pred_class == 'straw'){
+            p_area.innerHTML = 'Area: none'
+        }else{
+            p_area.innerHTML = 'Area: ' + (area*scale*scale).toFixed(2).toString() + ' mm' + '2'.sup()
+        }
         toastbodydiv.append(p_score)
         toastbodydiv.append(p_height)
         toastbodydiv.append(p_width)
+        toastbodydiv.append(p_area)
         if (pred_class == 'clump'){
             let [stalk_in_clump, spear_in_clump] = asparagusCount(context, i);
             let p_stalk_in_clump = document.createElement('p')
