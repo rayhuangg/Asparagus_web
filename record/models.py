@@ -41,7 +41,7 @@ class FrontView(models.Model):
     focus = models.FloatField(default=0.0)
 
     def __str__(self):
-        return self.name
+        return self.name + '_' + str(self.id)
 
     class Meta:
         get_latest_by = "date"
