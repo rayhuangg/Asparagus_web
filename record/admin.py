@@ -18,6 +18,7 @@ class AdminImageWidget(admin.widgets.AdminFileWidget):
 
 class ImageListInline(admin.TabularInline):
     model = ImageList
+    fields = ('name', 'date', 'id', 'image', 'focus')
     extra = 0
     formfield_overrides = {
         models.ImageField: {'widget': AdminImageWidget}
