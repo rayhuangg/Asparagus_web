@@ -354,7 +354,10 @@
             p_width.innerHTML = 'Width: ' + (width*scale*1.9).toFixed(2).toString() + ' mm'
         }
         var p_area = document.createElement('p')
-        if (pred_class == 'straw'){
+        if (scale == 0){
+            p_area.innerHTML = 'Area: ' + area.toFixed(2).toString() + ' px' + '2'.sup()
+        }
+        else if (pred_class == 'straw'){
             p_area.innerHTML = 'Area: none'
         }else{
             p_area.innerHTML = 'Area: ' + (area*scale*scale).toFixed(2).toString() + ' mm' + '2'.sup()
