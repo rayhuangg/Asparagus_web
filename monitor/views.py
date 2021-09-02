@@ -16,6 +16,8 @@ import time
 import cv2
 import csv
 import tqdm
+import pytz
+import datetime
 import pickle
 import base64
 import json
@@ -208,10 +210,10 @@ def get_latest():
 def setup_cfg():
     # load config from file and command-line arguments
     cfg = get_cfg()
-    cfg.merge_from_file("detectron/output/iter2.yaml")
+    cfg.merge_from_file("detectron/output/journal.yaml")
     # cfg.merge_from_list(args.opts)
     # Set score_threshold for builtin models
-    cfg.MODEL.WEIGHTS = "detectron/output/iter2.pth"
+    cfg.MODEL.WEIGHTS = "detectron/output/journal.pth"
     cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
     cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = 0.5
@@ -225,10 +227,11 @@ def skeletonization(pred_mask):
 
 def straw_detection(path):
     img = cv2.imread(path)
+    hue = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)[:,:,0]
     sat = cv2.cvtColor(img, cv2.COLOR_RGB2HSV)[:,:,1]
     boxes, widths = [], []
     # momo color
-    straw_momo = np.ones((len(sat), len(sat[0]))) * [sat > 100] * [img[:, :, 0] > 100]
+    straw_momo = np.ones((len(sat), len(sat[0]))) * [sat > 100] * [img[:, :, 0] > 100] * [hue > 200]
     label_momo = measure.label(straw_momo[0])
     test_momo = {}
     for i in range(len(label_momo)):
@@ -257,7 +260,7 @@ def straw_detection(path):
             boxes.append(box)
             widths.append(width)
     # blue color
-    straw_blue = np.ones((len(sat), len(sat[0]))) * [sat > 200] * [img[:, :, 2] > 100]
+    straw_blue = np.ones((len(sat), len(sat[0]))) * [sat > 150] * [img[:, :, 2] > 100] * [hue > 100]
     label_blue = measure.label(straw_blue[0])
     test_blue = {}
     for i in range(len(label_blue)):
@@ -295,10 +298,17 @@ def demo(request):
         idsDemo = [ int(id) for id in request.POST['demo'].split(',')]
         straw = request.POST['straw']
         inputs = []
-        for id in idsDemo:
-            img = ImageList.objects.get(id=id)
-            inputs.append([img.section.id, img.image.path])
+        if request.POST['source'] == 'scheduled':
+            now = datetime.datetime.now().astimezone(pytz.timezone('Asia/Taipei'))
+            oneDayBefore = now - datetime.timedelta(days=1)
+            for img in ImageList.objects.filter(date__range=[oneDayBefore, now]):
+                inputs.append([img.id, img.image.path])
+        else:
+            for id in idsDemo:
+                img = ImageList.objects.get(id=id)
+                inputs.append([id, img.image.path])
         cfg = setup_cfg()
+        
 
         demo = VisualizationDemo(cfg)
 
@@ -311,7 +321,7 @@ def demo(request):
         with open('monitor/progress.txt', 'w') as progress:
             progress.writelines('0 0')
         pro = 0
-        for sec_id, path in tqdm.tqdm(inputs):
+        for image_id, path in tqdm.tqdm(inputs):
             # print('start')
             img = read_image(path, format="BGR")
             start_time = time.time()
@@ -346,7 +356,6 @@ def demo(request):
                 pred_masks.append(pred_all[i][3])
 
             # print('start resultlist')
-            image_id = ImageList.objects.filter(section_id=sec_id).latest().id
             resultlist = ResultList(image_id=image_id, demo_id=demo_id)
             resultlist.save()
             resultlist_id = resultlist.id
