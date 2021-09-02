@@ -26,6 +26,10 @@
     #FrontViewImg:hover {
         cursor: pointer;
     }
+
+    /* img:hover {
+        font-size: 120%;
+    } */
 </style>
 
 
@@ -114,7 +118,9 @@
 
                         <div class="row" id="content1">
                             <div class="col-8">
-                                <img class="img-fluid" id="modalImg" src="" alt="None" style="width: auto; max-height: 90%;">
+                                <a href="" target="_blank">
+                                    <img class="img-fluid" id="modalImg" src="" alt="None" style="width: auto; max-height: 90%;">
+                                </a>
                             </div>
                             <div class="col-4" style="text-align: left;">
                                 <p id="name">Name: </p>
@@ -254,6 +260,7 @@
                 for (let i = 0; i < context.length; i++){
                     if (i == 0){
                         var firstRow = modal.querySelector('.modal-body #content1')
+                        firstRow.querySelector('a').href = context[i].url
                         firstRow.querySelector('#modalImg').src = context[i].url
                         firstRow.querySelector('#name').textContent = 'Name: ' + context[i].name
                         firstRow.querySelector('#date').textContent = 'Date: ' + context[i].date
@@ -268,6 +275,7 @@
                     else{
                         var clone = spare.cloneNode(true)
                         clone.id = 'content' + i.toString();
+                        clone.querySelector('a').href = context[i].url
                         clone.querySelector('#modalImg').src = context[i].url
                         clone.querySelector('#name').textContent = 'Name: ' + context[i].name
                         clone.querySelector('#date').textContent = 'Date: ' + context[i].date
