@@ -80,7 +80,15 @@ def side(request):
             side = 'left'
         # form.save()
         if form.is_valid():
-            form.save()
+
+            section = Section.objects.get(name=request.POST['section'])
+            image = request.FILES['image']
+            try:
+                name = request.POST['name']
+            except:
+                name = datetime.datetime.now().astimezone(pytz.timezone('Asia/Taipei')).strftime('%Y%m%d_%H%M%S')
+            ImageList(section=section, name=name, image=image).save()
+
             image = ImageList.objects.latest().image.path
             uploadtosql(request.POST['section'], image, side)
         else:
@@ -135,5 +143,5 @@ def showdemoRange(request):
         imageset = ImageList.objects.filter(date__range=[fr ,un])
         data = []
         for image in imageset:
-            data.append({'url': image.image.url, 'date': image.date.strftime("%Y/%m/%d, %H:%M:%S"), 'id': image.id, 'section': image.section.name})
+            data.append({'url': image.image.url, 'date': image.date.astimezone(pytz.timezone('Asia/Taipei')).strftime('%Y.%m.%d %H:%M:%S'), 'id': image.id, 'section': image.section.name})
         return HttpResponse(json.dumps({'data': data}))
