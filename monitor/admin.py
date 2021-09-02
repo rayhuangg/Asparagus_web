@@ -40,8 +40,14 @@ class ResultListInline(admin.TabularInline):
 class DemoAdmin(admin.ModelAdmin):
     fieldsets = [(None, {'fields': ['name']}),
                  (None, {'fields': ['date']}),
+                 (None, {'fields': ['source']})
                  ]
     inlines = [ResultListInline,]
+
+    list_display = ('name', 'date', 'id', 'number_of_detections')
+
+    def number_of_detections(self, obj):
+        return len(ResultList.objects.filter(demo__id=obj.id))
 
 admin.site.register(ResultList, ResultListAdmin)
 admin.site.register(Demo, DemoAdmin)
