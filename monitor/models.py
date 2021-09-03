@@ -9,7 +9,7 @@ from record.models import ImageList
 class Demo(models.Model):
     name = models.CharField(max_length=100, default=str(datetime.now().strftime('%Y%m%d_%H%M%S')))
     date = models.DateTimeField(default=now)
-    source = models.CharField(max_length=100, choices=[('scheduled', 'Scheduled'), ('manual', 'Manual')], default='manual')
+    source = models.CharField(max_length=100, choices=[('scheduled', 'Scheduled'), ('manual', 'Manual')])
 
     def __str__(self):
         return self.name + '_' + str(self.id)
