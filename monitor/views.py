@@ -303,10 +303,12 @@ def demo(request):
             oneDayBefore = now - datetime.timedelta(days=1)
             for img in ImageList.objects.filter(date__range=[oneDayBefore, now]):
                 inputs.append([img.id, img.image.path])
+            demo_model = Demo(source='scheduled')
         else:
             for id in idsDemo:
                 img = ImageList.objects.get(id=id)
                 inputs.append([id, img.image.path])
+            demo_model = Demo(source='manual')
         cfg = setup_cfg()
         
 
@@ -314,7 +316,6 @@ def demo(request):
 
         class_id = {1: 'clump', 2: 'stalk' , 3: 'spear', 4: 'bar'}
 
-        demo_model = Demo()
         demo_model.save()
         demo_id = demo_model.id
 
