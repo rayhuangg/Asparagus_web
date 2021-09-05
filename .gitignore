@@ -14,6 +14,7 @@ db.sqlite3
 progress.txt
 nohup.out
 
-routine.py
+server.sh
+routine.*
 sqltest.py
 area.py
