@@ -23,7 +23,7 @@
             <select id="inputGroup1" class="form-select" onchange="sendDemoId()">
                 <option selected>Select...</option>
                 {% for demo in demolist %}
-                <option value="{{demo.id}}">ID: {{demo.id}}, Date: {{demo.date}}</option>
+                <option value="{{demo.id}}">ID: {{demo.id}}, Date: {{demo.date}}, Type: {{demo.source}}</option>
                 {%endfor%}
             </select>
             <label for="inputGroup1">Date</label>
@@ -213,6 +213,7 @@
             },
             success: function(context) {
                 var context = JSON.parse(context);
+                console.log(context['thermaltime'])
                 document.getElementById("midCol-title").innerHTML = context['section'];
                 var midCol = document.getElementById("midCol-svg")
                 midCol.innerHTML = '';
@@ -244,11 +245,14 @@
                             var mask = rescale(context['instance'][i]['mask'], [img.naturalHeight, img.naturalWidth], [img.clientHeight, img.clientWidth]);
                             obj.setAttribute('points', mask)
                             if (context['instance'][i]['class'] == 'stalk'){
-                                obj.setAttribute('fill', 'darkgreen')
+                                obj.setAttribute('fill', '#5B2C6F')
                                 stalk++
                             }else if (context['instance'][i]['class'] == 'spear') {
                                 obj.setAttribute('fill', 'red')
                                 spear++
+                            }
+                            else if (context['instance'][i]['class'] == 'bar'){
+                                obj.setAttribute('fill', '#fcbe03')
                             }
                             else {
                                 obj.setAttribute('fill', 'cyan')
@@ -287,6 +291,7 @@
         var width = context['instance'][i]['width']
         var scale = context['instance'][i]['scale']
         var area = context['instance'][i]['area']
+        var thermalTime = context['thermaltime']
         
         var rightCol = document.getElementById('rightCol')
         var lenClump = $('#clump').length;
@@ -346,12 +351,12 @@
         }
         var p_width = document.createElement('p')
         if (scale == 0){
-            p_width.innerHTML = 'Width: ' + (width*1.9).toFixed(2).toString() + ' px'
+            p_width.innerHTML = 'Width: ' + width.toFixed(2).toString() + ' px'
         }else if (pred_class == 'straw'){
             p_width.innerHTML = 'Width: ' + width.toFixed(2).toString() + ' px'
 
         }else {
-            p_width.innerHTML = 'Width: ' + (width*scale*1.9).toFixed(2).toString() + ' mm'
+            p_width.innerHTML = 'Width: ' + width*scale.toFixed(2).toString() + ' mm'
         }
         var p_area = document.createElement('p')
         if (scale == 0){
@@ -362,8 +367,25 @@
         }else{
             p_area.innerHTML = 'Area: ' + (area*scale*scale).toFixed(2).toString() + ' mm' + '2'.sup()
         }
+        if (pred_class == 'spear' && scale != 0){
+            var p_pred_length = document.createElement('p')
+            p_pred_length.id = 'predLength'
+            var h1 = height * scale / 10
+            var h2 = predLength(thermalTime, h1, 24)
+            p_pred_length.innerHTML = 'Length in <select id = "thermaltimeselect"></select> hrs: ' + h2.toFixed(2).toString() + ' mm'
+            var thermaltimeselect = p_pred_length.getElementsByTagName('select')[0]
+            console.log(thermaltimeselect)
+            for(let i = 23; i >= 0; i --){
+                let opt = document.createElement('option')
+                opt.value = i + 1
+                opt.innerHTML = i + 1
+                thermaltimeselect.add(opt)
+            }
+            thermaltimeselect.onchange = function(){recalculate(thermalTime, h1)}
+        }
         toastbodydiv.append(p_score)
         toastbodydiv.append(p_height)
+        if(p_pred_length){toastbodydiv.append(p_pred_length)}
         toastbodydiv.append(p_width)
         toastbodydiv.append(p_area)
         if (pred_class == 'clump'){
@@ -377,6 +399,16 @@
         }
         toastdiv.append(toastheaderdiv)
         toastdiv.append(toastbodydiv)
+        // if (pred_class == 'spear' && scale !=0){
+        //     var thermaltimeselect = $('#thermaltimeselect')
+        //     console.log(thermaltimeselect)
+        //     for(let i = 0; i < 24; i ++){
+        //         let opt = document.createElement('option')
+        //         opt.value = i
+        //         opt.innerHTML = i
+        //         thermaltimeselect.appendChild(opt)
+        //     }
+        // }
         var clumpToast = document.getElementById('clumpToast')
         var elseToast = document.getElementById('elseToast')
         if (pred_class=='clump'){
@@ -399,6 +431,35 @@
         }
         // clumpToast.append(toastdiv)
         
+    }
+
+    function recalculate(thermalTime, h1) {
+        var thermaltimeselect = document.getElementById('thermaltimeselect')
+        var selectedValue = thermaltimeselect.value
+        var h2 = predLength(thermalTime, h1, selectedValue)
+        var p_pred_length = document.getElementById('predLength')
+        p_pred_length.innerHTML = 'Length in <select id = "thermaltimeselect"></select> hrs: ' + h2.toFixed(2).toString() + ' mm'
+        var thermaltimeselect = document.getElementById('thermaltimeselect')
+        for(let i = 23; i >= 0; i --){
+                let opt = document.createElement('option')
+                opt.value = i + 1
+                opt.innerHTML = i + 1
+                if (i == selectedValue - 1){
+                    opt.selected = true
+                }
+                thermaltimeselect.add(opt)
+            }
+        thermaltimeselect.onchange = function(){recalculate(thermalTime, h1)}
+    }
+
+    function predLength(thermalTime, h1, hrs) {
+        var t1 = (1.409 - Math.log(Math.log(31.91 / h1)))/0.001397
+        var t2 = t1
+        for(let i = 0; i < hrs; i++){
+            t2 += thermalTime[i]
+        }
+        var h2 = 31.91 * Math.exp(-1 * Math.exp(1.409 - 0.001397 * t2)) * 10
+        return h2
     }
 
     function asparagusCount(context, i) {
