@@ -46,7 +46,7 @@
                         <option value="1">Stalk</option>
                         <option value="2">Spear</option>
                     </select>
-                    <label for="floatingSelect-until">Type</label>
+                    <label for="floatingSelect-until">Category</label>
                 </div>
             </form>
         </div>
@@ -200,7 +200,12 @@
         for (let btn of allBtns){
             btn.textContent = '0'
             btn.textContent = type == 0 ? btn.getAttribute('data-clumps') : ( type == 1 ? btn.getAttribute('data-stalks') : btn.getAttribute('data-spears'))
-            btn.className = btn.textContent > 10 ? 'btn btn-danger' : 'btn btn-outline-primary'
+            if (btn.id.length < 2){
+                btn.className = 'btn btn-outline-danger'
+            }
+            else {
+                btn.className = btn.textContent > 10 ? 'btn btn-danger' : (btn.textContent > 5 ? 'btn btn-warning' : (btn.textContent > 3 ? 'btn btn-success' : 'btn btn-secondary'))
+            }
         }
     }
 
