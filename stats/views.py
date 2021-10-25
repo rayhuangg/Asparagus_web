@@ -14,7 +14,7 @@ def index(request):
     demos = [d for d in Demo.objects.all()] # {{ demolist.name }} form
     demo_range = [ [d.id, d.name, d.date.astimezone(pytz.timezone('Asia/Taipei')).strftime('%B %d, %Y, %I:%M %p')] for d in Demo.objects.all() ]
     sections = [ s for s in Section.objects.all()]
-    return render(request, 'stats/stats.html', context={'demolist': demos[::-1], 'demorange': demo_range[::-1], 'sections': sections})
+    return render(request, 'stats/stats.html', context={'demolist': demos, 'demorange': demo_range[::-1], 'sections': sections})
 
 # def checkRange(request):
 #     if request.method == 'POST':
