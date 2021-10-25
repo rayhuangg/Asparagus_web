@@ -27,6 +27,7 @@ from skimage import measure, morphology
 from scipy import ndimage
 from pycocotools import mask
 from plantcv import plantcv as pcv
+import pymysql.cursors
 
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
@@ -59,6 +60,8 @@ def index(request):
         #     scale.append(18)
         # scale = 18/(sum(scale)/len(scale))  ## 20mm / length of pixel
         scales = instances.filter(predicted_class='straw')
+        if scales:
+            context['thermaltime'] = thermalTime(image.date.astimezone(pytz.timezone('Asia/Taipei')))
         for instance in instances:
             if instance.predicted_class != 'straw':
                 scale = closest_scale(scales, instance)
@@ -75,13 +78,44 @@ def index(request):
                                         'area': cv2.contourArea(cv2.UMat(np.expand_dims(np.array(instance.mask).astype(np.float32), 1))),
                                         'height': instance.height,
                                         'width' : instance.width,
-                                        'scale': scale})
+                                        'scale': scale,
+                                        })
                                         
         return HttpResponse(json.dumps(context))
     demos = [d for d in Demo.objects.all()] # {{ demolist.name }} form
-    demo_range = [ [d.id, d.name] for d in Demo.objects.all() ]
+    demo_range = [ [d.id, d.name] for d in Demo.objects.all()]
     sections = [ s for s in Section.objects.all()]
-    return render(request, 'monitor/monitor.html', context={'demolist': demos[::-1], 'demorange': demo_range[::-1], 'sections': sections})
+    return render(request, 'monitor/monitor.html', context={'demolist': demos, 'demorange': demo_range[::-1], 'sections': sections})
+
+def thermalTime(date):
+    connection = pymysql.connect(host = '140.112.94.59',
+                                 port = 33306,
+                                 user = 'root',
+                                 password = 'taipower',
+                                 database = 'Yizhu_Station',
+                                 )
+    datenow = date.strftime('%Y-%m-%d %H:%M:%S')
+    datebefore = date - datetime.timedelta(days=3)
+    sql = "SELECT `Time`, `airTemp` FROM `Yizhu_Station` WHERE `Time` BETWEEN '" + datebefore.strftime('%Y-%m-%d %H:%M:%S') + "' AND '" + date.strftime('%Y-%m-%d %H:%M:%S') + "' AND `airTemp` IS NOT NULL ORDER BY `Time` DESC"
+    with connection:
+        with connection.cursor() as cursor:
+            cursor.execute(sql)
+            result = cursor.fetchall()
+    avgTemps = []
+    temps = []
+    i = 1
+    for d, temp in result:
+        d = d.astimezone(pytz.timezone('Asia/Taipei'))
+        if date - d < datetime.timedelta(hours=i):
+            temps.append(temp)
+        else:
+            i += 1
+            temps.remove(0.0)
+            temps = [t for t in temps if t != 0.0]
+            avgTemps.append((max(temps) + min(temps))/2)
+            temps = []
+
+    return avgTemps
 
 def downloadJSON(request, id):
     if request.method == 'POST':
@@ -210,10 +244,10 @@ def get_latest():
 def setup_cfg():
     # load config from file and command-line arguments
     cfg = get_cfg()
-    cfg.merge_from_file("detectron/output/journal.yaml")
+    cfg.merge_from_file("detectron/output/model_straw.yaml")
     # cfg.merge_from_list(args.opts)
     # Set score_threshold for builtin models
-    cfg.MODEL.WEIGHTS = "detectron/output/journal.pth"
+    cfg.MODEL.WEIGHTS = "detectron/output/model_straw.pth"
     cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5
     cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
     cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = 0.5
@@ -301,20 +335,32 @@ def demo(request):
         if request.POST['source'] == 'scheduled':
             now = datetime.datetime.now().astimezone(pytz.timezone('Asia/Taipei'))
             oneDayBefore = now - datetime.timedelta(days=1)
+            sectiondict = {}
             for img in ImageList.objects.filter(date__range=[oneDayBefore, now]):
+                if img.section.name not in sectiondict:
+                    sectiondict[img.section.name] = img
+                elif img.date > sectiondict[img.section.name].date:
+                    sectiondict[img.section.name] = img
+            for _, img in sectiondict.items():
                 inputs.append([img.id, img.image.path])
             demo_model = Demo(source='scheduled')
         else:
-            for id in idsDemo:
-                img = ImageList.objects.get(id=id)
-                inputs.append([id, img.image.path])
+            imgs = [ImageList.objects.get(id=id) for id in idsDemo]
+            sectiondict = {}
+            for img in imgs:
+                if img.section.name not in sectiondict:
+                    sectiondict[img.section.name] = img
+                elif img.date > sectiondict[img.section.name].date:
+                    sectiondict[img.section.name] = img
+            for _, img in sectiondict.items():
+                inputs.append([img.id, img.image.path])
             demo_model = Demo(source='manual')
         cfg = setup_cfg()
         
 
         demo = VisualizationDemo(cfg)
 
-        class_id = {1: 'clump', 2: 'stalk' , 3: 'spear', 4: 'bar'}
+        class_id = {1: 'clump', 2: 'stalk' , 3: 'spear', 4: 'bar', 5:'straw'}
 
         demo_model.save()
         demo_id = demo_model.id
@@ -408,13 +454,13 @@ def demo(request):
                 instance = Instance(predicted_class=class_id[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=resultlist_id)
                 instance.save()
             # straw detection
-            if straw == 'true':
-                straw_boxes, straw_widths = straw_detection(path)
-                for straw_box, straw_width in zip(straw_boxes, straw_widths):
-                    # print(straw_box)
-                    # print(straw_width)
-                    instance = Instance(predicted_class='straw', score=1, mask=straw_box.tolist(), width=straw_width, resultlist_id=resultlist_id)
-                    instance.save()
+            # if straw == 'true':
+            #     straw_boxes, straw_widths = straw_detection(path)
+            #     for straw_box, straw_width in zip(straw_boxes, straw_widths):
+            #         # print(straw_box)
+            #         # print(straw_width)
+            #         instance = Instance(predicted_class='straw', score=1, mask=straw_box.tolist(), width=straw_width, resultlist_id=resultlist_id)
+            #         instance.save()
 
             pro += 1
             with open('monitor/progress.txt', 'w') as progress:
