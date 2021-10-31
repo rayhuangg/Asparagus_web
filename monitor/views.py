@@ -51,6 +51,7 @@ def index(request):
         instances = Instance.objects.filter(resultlist=resultlist)
         image = ImageList.objects.get(id=image_id)
         context['image'] = image.image.url
+        context['date'] = image.date.astimezone(pytz.timezone('Asia/Taipei')).strftime('%Y.%m.%d %H:%M:%S')
         # calculate scale for each instance
         # scale = []
         # for instance in instances:
@@ -60,13 +61,18 @@ def index(request):
         #     scale.append(18)
         # scale = 18/(sum(scale)/len(scale))  ## 20mm / length of pixel
         scales = instances.filter(predicted_class='straw')
+        if len(scales) == 0:
+            scales = scales | instances.filter(predicted_class='bar')
         if scales:
             context['thermaltime'] = thermalTime(image.date.astimezone(pytz.timezone('Asia/Taipei')))
         for instance in instances:
             if instance.predicted_class != 'straw':
                 scale = closest_scale(scales, instance)
                 if scale != 0:
-                    scale = 10 / scale.width ## the width of straw is 18 mm, so 
+                    if scale.predicted_class == 'straw':
+                        scale = 10 / scale.width ## the width of straw is 10 mm, so 
+                    else:
+                        scale = 18 / scale.width
                 else:
                     scale = 0
             else:
@@ -110,7 +116,6 @@ def thermalTime(date):
             temps.append(temp)
         else:
             i += 1
-            temps.remove(0.0)
             temps = [t for t in temps if t != 0.0]
             avgTemps.append((max(temps) + min(temps))/2)
             temps = []
