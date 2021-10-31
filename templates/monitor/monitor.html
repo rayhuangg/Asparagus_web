@@ -42,6 +42,7 @@
             </div>
             <div class="toast-body" style="font-size: large;">
                 <p id="instanceId">ID</p>
+                <p id="date">Date</p>
                 <p id="clump">Clump</p>
                 <p id="stalk">Stalk</p>
                 <p id="spear">Spear</p>
@@ -212,6 +213,7 @@
                 demo: document.getElementById('inputGroup1').value
             },
             success: function(context) {
+                console.log(context)
                 var context = JSON.parse(context);
                 console.log(context['thermaltime'])
                 document.getElementById("midCol-title").innerHTML = context['section'];
@@ -266,6 +268,7 @@
                     }
                     document.getElementById('totalToast-title').innerText = context['section'];
                     document.getElementById('instanceId').innerHTML = 'ID: '+context['id'].toString();
+                    document.getElementById('date').innerHTML = 'Date: ' + context['date']
                     document.getElementById('clump').innerHTML = 'Clump: '+clump.toString();
                     document.getElementById('stalk').innerHTML = 'Stalk: '+stalk.toString();
                     document.getElementById('spear').innerHTML = 'Spear: '+spear.toString();
@@ -328,7 +331,7 @@
         toastbodydiv.className = 'toast-body'
         toastbodydiv.style.fontSize ='large'
         var p_score = document.createElement('p')
-        p_score.innerHTML = 'Score: ' + score.toFixed(4)*100 + ' %'
+        p_score.innerHTML = 'Score: ' + (score*100).toFixed(2) + ' %'
         var p_height = document.createElement('p')
         if (pred_class == 'clump'){
             if (scale == 0){
@@ -356,7 +359,7 @@
             p_width.innerHTML = 'Width: ' + width.toFixed(2).toString() + ' px'
 
         }else {
-            p_width.innerHTML = 'Width: ' + width*scale.toFixed(2).toString() + ' mm'
+            p_width.innerHTML = 'Width: ' + (width*scale).toFixed(2).toString() + ' mm'
         }
         var p_area = document.createElement('p')
         if (scale == 0){
