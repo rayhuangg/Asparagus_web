@@ -16,7 +16,7 @@
         <div class="col-3" >
             <form class="g-3 was-validated">
                 <div class="form-floating" style="margin: 1em 1em">
-                    <select class="form-select" id="floatingSelect-from" required aria-label="Floating label select example" onchange="selectionChange()">
+                    <select class="form-select" id="floatingSelect-from" required onchange="selectionChange()">
                         <option value="">...</option>
                         {% for demo in demolist %}
                         <option value="{{demo.id}}">ID: {{demo.id}}, Date: {{demo.date}}</option>
@@ -25,13 +25,13 @@
                     <label for="floatingSelect-from">From</label>
                 </div>
                 <div class="form-floating" style="margin: 1em 1em">
-                    <select class="form-select" id="floatingSelect-until" required aria-label="Floating label select example" onchange="sendRange()">
+                    <select class="form-select" id="floatingSelect-until" required onchange="sendRange()">
                         <option value="">...</option>
                     </select>
                     <label for="floatingSelect-until">Until</label>
                 </div>
                 <!-- <div class="form-floating" style="margin: 1em 1em">
-                    <select class="form-select" id="floatingSelect-section" required aria-label="Floating label select example" onchange="sendRange()">
+                    <select class="form-select" id="floatingSelect-section" required onchange="sendRange()">
                         <option value="0">All</option>
                         {% for section in sections %}
                         <option value="{{section.id}}">{{section.name}}</option>
@@ -40,13 +40,41 @@
                     <label for="floatingSelect-until">Area</label>
                 </div> -->
                 <div class="form-floating" style="margin: 1em 1em">
-                    <select class="form-select" id="floatingSelect-type" required aria-label="Floating label select example" onchange="chooseType()">
+                    <select class="form-select" id="floatingSelect-type" required onchange="chooseType()">
                         <option value="">...</option>
                         <option value="0">Clump</option>
                         <option value="1">Stalk</option>
                         <option value="2">Spear</option>
                     </select>
-                    <label for="floatingSelect-until">Category</label>
+                    <label for="floatingSelect-type">Category</label>
+                </div>
+                <div class="form-floating" style="margin: 1em 1em;">
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-floating">
+                                <select class="form-select" id="floatingSelect-hours" disabled onchange="predictLength()">
+                                    <option value="0">...</option>
+                                    {% for i in thermaltimerange %}
+                                    <option value="{{i}}">{{i}}</option>
+                                    {% endfor %}
+                                </select>
+                                <label for="floatingSelect-hours" style="font-size: medium;">In future ... hours</label>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-floating">
+                                <select class="form-select" id="floatingSelect-thres" disabled onchange="predictLength()">
+                                    <option value="0">...</option>
+                                    <option value="30">30</option>
+                                    <option value="25">25</option>
+                                    <option value="20">20</option>
+                                    <option value="15">15</option>
+                                </select>
+                                <label for="floatingSelect-thres" style="font-size: medium;">longer than ... cm</label>
+                            </div>
+                        </div>
+                    </div>
+                    
                 </div>
             </form>
         </div>
@@ -123,10 +151,10 @@
         var untilSelect = document.getElementById('floatingSelect-until');
         var demorange = {{ demorange|safe }};
         var latestDemo = demorange[demorange.length - 1][0]
-        console.log(fromValue)
-        console.log(untilSelect)
-        console.log(latestDemo)
-        console.log(demorange)
+        // console.log(fromValue)
+        // console.log(untilSelect)
+        // console.log(latestDemo)
+        // console.log(demorange)
         untilSelect.options.length = 0;
         if(fromValue){
             var option = document.createElement("option");
@@ -174,20 +202,38 @@
                     btn.textContent = '0'
                     btn.setAttribute('data-clumps', '0')
                     btn.setAttribute('data-stalks', '0')
-                    btn.setAttribute('data-spearss', '0')
+                    btn.setAttribute('data-spears', '0')
                 }
                 var context = JSON.parse(context);
+                console.log(context)
                 // var type = document.getElementById('floatingSelect-type').value
 
                 for ( var [type, data] of Object.entries(context)){
-                    for ( var [k, v] of Object.entries(data)){
-                        let btn = document.getElementById(k)
-                        btn.setAttribute('data-'+type, v.toString())
-                        let col = document.getElementById(k[0])
-                        let colCount = parseInt(col.getAttribute('data-'+type))
-                        col.setAttribute('data-'+type, (colCount + v).toString())
+                    if (type == 'spears'){
+                        for (let sec in data){
+                            var num = data[sec]
+                            let btn = document.getElementById(sec)
+                            btn.setAttribute('data-'+type, num.length.toString())
+                            btn.setAttribute('data-'+type+'-raw', num)
+                            let col = document.getElementById(sec[0])
+                            let colCount = parseInt(col.getAttribute('data-'+type))
+                            col.setAttribute('data-'+type, (colCount + num.length).toString())
+
+                        }
+                    }else if (type == 'stalks' || type == 'clumps'){
+                        for ( var [sec, num] of Object.entries(data)){
+                            let btn = document.getElementById(sec)
+                            btn.setAttribute('data-'+type, num.toString())
+                            let col = document.getElementById(sec[0])
+                            let colCount = parseInt(col.getAttribute('data-'+type))
+                            col.setAttribute('data-'+type, (colCount + num).toString())
+                        }
+                    }else{
+                        continue
                     }
+                    
                 }
+                document.getElementById('floatingSelect-hours').setAttribute('data-thermaltime', context['thermaltime'])
                 document.getElementById('btns').style.opacity = '100%'
             }
         })
@@ -196,6 +242,13 @@
 
     function chooseType(){
         var type = document.getElementById('floatingSelect-type').value
+        if (type != 2){
+            document.getElementById('floatingSelect-hours').disabled = true
+            document.getElementById('floatingSelect-thres').disabled = true
+        }else {
+            document.getElementById('floatingSelect-hours').disabled = false
+            document.getElementById('floatingSelect-thres').disabled = false
+        }
         var allBtns = document.getElementsByTagName('button')
         for (let btn of allBtns){
             btn.textContent = '0'
@@ -206,6 +259,52 @@
             else {
                 btn.className = btn.textContent > 10 ? 'btn btn-danger' : (btn.textContent > 5 ? 'btn btn-warning' : (btn.textContent > 3 ? 'btn btn-success' : 'btn btn-secondary'))
             }
+        }
+    }
+
+    function calculate(thermalTime, h1, hrs) {
+        var t1 = (1.409 - Math.log(Math.log(31.91 / h1)))/0.001397
+        var t2 = t1
+        for(let i = 0; i < hrs; i++){
+            t2 += thermalTime[i]
+        }
+        var h2 = 31.91 * Math.exp(-1 * Math.exp(1.409 - 0.001397 * t2))
+        if (isNaN(h2)){
+            return h1
+        }
+        return h2
+    }
+
+    function predictLength(){
+        var hours = document.getElementById('floatingSelect-hours').value
+        var thres = document.getElementById('floatingSelect-thres').value
+        var thermaltime = document.getElementById('floatingSelect-hours').getAttribute('data-thermaltime').split(',')
+        thermaltime = thermaltime.map(t => parseFloat(t))
+        var allBtns = document.getElementsByTagName('button')
+        for (let btn of allBtns){
+            if (btn.id.length == 1){
+                btn.textContent = '0'
+            }
+            if (hours == 0 && thres == 0){
+                btn.textContent = btn.getAttribute('data-spears')
+            }else if (hours != 0 && thres != 0){
+                var spears = btn.getAttribute('data-spears-raw')
+                if (spears){
+                    spears = spears.split(',').map(spear => parseFloat(spear))
+                    predL = Object.values(spears.map(h => calculate(thermaltime, h/10, hours)))
+                    predL = predL.filter(l => l >= thres)
+                    btn.textContent = predL.length
+                }
+            } 
+        }
+        for (let btn of allBtns){
+            if (btn.id.length > 1 && hours != 0 && thres != 0){
+                let col = document.getElementById(btn.id[0])
+                col.textContent = parseInt(col.textContent) + parseInt(btn.textContent)
+            }
+        }
+        for (let btn of allBtns){
+            btn.className = btn.textContent > 10 ? 'btn btn-danger' : (btn.textContent > 5 ? 'btn btn-warning' : (btn.textContent > 3 ? 'btn btn-success' : 'btn btn-secondary'))
         }
     }
 
