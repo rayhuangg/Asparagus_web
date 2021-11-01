@@ -1,6 +1,8 @@
 # django_asparagus
 Asparagus monitoring system implemented using django
 
+http://digiag.bime.ntu.edu.tw:3000/
+
 ![](https://github.com/JustinBear99/django_asparagus/blob/master/homepage.jpg)
 
 ## Home
