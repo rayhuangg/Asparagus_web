@@ -28,6 +28,7 @@ from scipy import ndimage
 from pycocotools import mask
 from plantcv import plantcv as pcv
 import pymysql.cursors
+from .sql_chiang import thermalTime
 
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
@@ -93,34 +94,6 @@ def index(request):
     sections = [ s for s in Section.objects.all()]
     return render(request, 'monitor/monitor.html', context={'demolist': demos, 'demorange': demo_range[::-1], 'sections': sections})
 
-def thermalTime(date):
-    connection = pymysql.connect(host = '140.112.94.59',
-                                 port = 33306,
-                                 user = 'root',
-                                 password = 'taipower',
-                                 database = 'Yizhu_Station',
-                                 )
-    datenow = date.strftime('%Y-%m-%d %H:%M:%S')
-    datebefore = date - datetime.timedelta(days=3)
-    sql = "SELECT `Time`, `airTemp` FROM `Yizhu_Station` WHERE `Time` BETWEEN '" + datebefore.strftime('%Y-%m-%d %H:%M:%S') + "' AND '" + date.strftime('%Y-%m-%d %H:%M:%S') + "' AND `airTemp` IS NOT NULL ORDER BY `Time` DESC"
-    with connection:
-        with connection.cursor() as cursor:
-            cursor.execute(sql)
-            result = cursor.fetchall()
-    avgTemps = []
-    temps = []
-    i = 1
-    for d, temp in result:
-        d = d.astimezone(pytz.timezone('Asia/Taipei'))
-        if date - d < datetime.timedelta(hours=i):
-            temps.append(temp)
-        else:
-            i += 1
-            temps = [t for t in temps if t != 0.0]
-            avgTemps.append((max(temps) + min(temps))/2)
-            temps = []
-
-    return avgTemps
 
 def downloadJSON(request, id):
     if request.method == 'POST':
