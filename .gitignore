@@ -18,3 +18,4 @@ server.sh
 routine.*
 sqltest.py
 area.py
+sql_chiang.py
