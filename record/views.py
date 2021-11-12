@@ -12,7 +12,6 @@ from monitor.models import Demo, ResultList
 import datetime
 import json
 import ftplib
-import MySQLdb
 import pytz
 
 # Create your views here.
