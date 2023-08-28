@@ -23,19 +23,20 @@ import base64
 import json
 import numpy as np
 from PIL import Image
+from skimage.draw import polygon2mask
 from skimage import measure, morphology
+from skimage.morphology import skeletonize
 from scipy import ndimage
 from pycocotools import mask
 from plantcv import plantcv as pcv
 import pymysql.cursors
 from .sql_chiang import thermalTime
-
+import math 
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
-
+from skimage import measure, morphology,feature
 from detectron.demo.predictor import VisualizationDemo
-
 
 # Create your views here.
 @csrf_exempt
@@ -71,23 +72,51 @@ def index(request):
                 scale = closest_scale(scales, instance)
                 if scale != 0:
                     if scale.predicted_class == 'straw':
-                        scale = 10 / scale.width ## the width of straw is 10 mm, so 
+                        scale_width = 10 / scale.width ## the width of straw is 10 mm, so 
+                        scale = 200 / scale.height
                     else:
-                        scale = 18 / scale.width
+                        scale_width = 18 / scale.width
+                        scale = 150 / scale.height
                 else:
                     scale = 0
+                    scale_width = 0
             else:
-                scale = instance.width
-            context['instance'].append({'class': instance.predicted_class,
-                                        'score': instance.score,
-                                        'bbox': [instance.bbox_xmin, instance.bbox_ymin, instance.bbox_xmax, instance.bbox_ymax],
-                                        'mask': instance.mask,
-                                        'area': cv2.contourArea(cv2.UMat(np.expand_dims(np.array(instance.mask).astype(np.float32), 1))),
-                                        'height': instance.height,
-                                        'width' : instance.width,
-                                        'scale': scale,
-                                        })
-                                        
+                scale = instance.height
+                scale_width = instance.width
+            
+            height = instance.height
+            width = instance.width
+            # context['instance'].append({'class': instance.predicted_class,
+            #                             'score': instance.score,
+            #                             'bbox': [instance.bbox_xmin, instance.bbox_ymin, instance.bbox_xmax, instance.bbox_ymax],
+            #                             'mask': instance.mask,
+            #                             'area': cv2.contourArea(cv2.UMat(np.expand_dims(np.array(instance.mask).astype(np.float32), 1))),
+            #                             'height': instance.height,
+            #                             'width' : instance.width,
+            #                             'scale': scale,
+            #                             })
+    
+            if instance.predicted_class == 'bar' or instance.predicted_class == 'straw'or scale ==0:    
+                context['instance'].append({'class': instance.predicted_class,
+                                            'score': instance.score,
+                                            'bbox': [instance.bbox_xmin, instance.bbox_ymin, instance.bbox_xmax, instance.bbox_ymax],
+                                            'mask': instance.mask,
+                                            'area': cv2.contourArea(cv2.UMat(np.expand_dims(np.array(instance.mask).astype(np.float32), 1))),
+                                            'height': height,
+                                            'width' : width,
+                                            'scale': scale,
+                                            })
+            else:
+                context['instance'].append({'class': instance.predicted_class,
+                                            'score': instance.score,
+                                            'bbox': [instance.bbox_xmin, instance.bbox_ymin, instance.bbox_xmax, instance.bbox_ymax],
+                                            'mask': instance.mask,
+                                            'area': cv2.contourArea(cv2.UMat(np.expand_dims(np.array(instance.mask).astype(np.float32), 1))),
+                                            'height': height,
+                                            'width' : (width/scale)*scale_width,
+                                            'scale': scale,
+                                            })
+
         return HttpResponse(json.dumps(context))
     demos = [d for d in Demo.objects.all()] # {{ demolist.name }} form
     demo_range = [ [d.id, d.name] for d in Demo.objects.all()]
@@ -142,6 +171,199 @@ def downloadJSON(request, id):
         
         return HttpResponse(json.dumps(content, indent=2))
     return HttpResponse(json.dumps({"PAIN": "PEKO"}))
+
+
+# def downloadexcel(request,total_id):
+#     if request.method == 'POST':
+#         resultlists = ResultList.objects.filter(demo__id=total_id)
+#         section = []
+#         #print(resultlists)  
+#         demolist = [ d for d in Demo.objects.all()]
+#         clumps, stalks, spears, bar_section = {} , {} , {} , {}
+        
+        
+#         for result in resultlists:
+#             name_section = result.image.section.name
+#             section.append(name_section)
+#             instances = Instance.objects.filter(resultlist__id=result.id)
+#             scales = instances.filter(predicted_class='straw')
+#             if len(scales) == 0:
+#                 scales = scales | instances.filter(predicted_class='bar')
+#             if name_section in spears:
+#                 pass
+#            else:
+#                 clumps[name_section] = 0
+#                 stalks[name_section] = 0
+#                 spears[name_section] = []
+#                 bar_section[name_section] = []
+#             for instance in instances:
+#                 if instance.predicted_class == 'clump':
+#                     clumps[name_section] += 1
+#                 elif instance.predicted_class == 'stalk':
+#                     stalks[name_section] += 1
+#                 elif instance.predicted_class == 'bar':
+#                     bar_xmid = (instance.bbox_xmax+instance.bbox_xmin)/2
+#                     bar_section[name_section].append([bar_xmid]) 
+#                 elif instance.predicted_class == 'spear':
+#                     if len(scales) != 0:
+#                         scale = closest_scale(scales, instance)
+#                         if scale.predicted_class == 'straw' :
+#                             # scale = 10 / scale.width 
+#                             scale = 200 / scale.height 
+#                             scale_type = 1
+#                         else: 
+#                             scale = 150 / scale.height 
+#                             # scale = 18 / scale.width
+#                             scale_type = 2
+#                         #spears[name_section].append(instance.height*scale)
+#                     else:
+#                         scale = 1 #no sca
+#                         scale_type = 0
+#                         
+                        
+#                     #spears[name_section].append(scale)
+#                     area = cv2.contourArea(cv2.UMat(np.expand_dims(np.array(instance.mask).astype(np.float32), 1)))
+#                     bbox_xmid = (instance.bbox_xmax+instance.bbox_xmin)/2
+#                     # print(scale)
+#                     spears[name_section].append([bbox_xmid,area*scale*scale,instance.width*scale,instance.height*scale,scale_type,bbox_xmid])
+            
+            
+        #print(spears)
+        #print(section)
+#         scale_type_dict ={0:'None',1:'Straw',2:'Bar'}
+#         response = HttpResponse()
+#         response['Content-Disposition'] = "attachment;filename='abc.csv'"
+#         writer = csv.writer(response)
+#         writer.writerow(['Demo ID:',total_id])
+#         writer.writerow([''])
+#         writer.writerow(['Section','Spear_ID','Area(mm2)','Width(mm)','Length(mm)','Scale_type','Direction','Position to bar'])
+#         for i in range(len(section)): 
+#             sort_spear = sorted(spears[section[i]])
+#             # print((sort_spear))
+#             sort_bar = sorted(bar_section[section[i]])
+#             # print((sort_bar))
+#             for j in (range(len(sort_spear))):
+#                 for k in (range(len(sort_bar))):
+#                     distance2bar = sort_spear[j][5] - sort_bar[k][0]
+#                     if distance2bar > 0:
+#                        Direction = 'right'
+#                     elif distance2bar < 0:
+#                        Direction = 'left'
+#                     elif distance2bar == 0:
+#                        Direction = 'mid'    
+#                     writer.writerow([str(section[i]),j+1,round(sort_spear[j][1],2),
+#                     round(sort_spear[j][2],2),round(sort_spear[j][3],2),scale_type_dict[sort_spear[j][4]],Direction,abs(distance2bar)])
+#                     #writer.writerow( spears[section[i]])
+        
+#    return response
+
+
+
+def downloadexcel(request,total_id):
+    if request.method == 'POST':
+        print(total_id)
+        resultlists = ResultList.objects.filter(demo__id=total_id)
+        section = []
+        demolist = [ d for d in Demo.objects.all()]
+        clumps, stalks, spears,  bar_section= {} , {}, {}, {}
+        # instance_num = 0
+        new_result = []
+        # print(resultlists)
+
+        target = {}
+        for i, result in enumerate(resultlists):
+            if result.image.id not in target.keys():
+                target[result.image.id] = i
+            else:
+                if resultlists[target[result.image.id]].id < result.id:
+                    target[result.image.id] = i
+
+        for image_id in target.keys():
+            result = resultlists[target[image_id]]
+            print(result)
+        # for result in resultlists:
+            name_section = result.image.section.name
+            # print(result.image.id)
+            section.append(name_section)
+            instances =  Instance.objects.filter(resultlist__id=result.id)
+            scales = instances.filter(predicted_class='straw')
+            # ig, ax = plt.subplots()
+            # image = plt.imread("/home/adam/django_asparagus/b21or.jpg")
+            # plt.imshow(image)
+            if len(scales) == 0:
+                scales = scales | instances.filter(predicted_class='bar')
+            if name_section in spears:
+                pass
+            else:
+                clumps[name_section] = 0
+                stalks[name_section] = 0
+                spears[name_section] = []
+                bar_section[name_section] = []
+            for instance in instances:
+                # instance_num += 1
+                # print(instance_num)
+                if instance.predicted_class == 'clump':
+                    clumps[name_section] += 1
+                elif instance.predicted_class == 'stalk':
+                    stalks[name_section] += 1
+                elif instance.predicted_class == 'bar':
+                    bar_xmid = (instance.bbox_xmax+instance.bbox_xmin)/2
+                    bar_section[name_section].append([bar_xmid])
+
+                elif instance.predicted_class == 'spear':
+                    if len(scales) != 0:
+                        scale = closest_scale(scales, instance)
+                        if scale.predicted_class == 'straw' :
+                            width_scale = 10 / scale.width
+                            scale = 200 / scale.height
+                            scale_type = 1
+                        else:
+                            width_scale = 18 / scale.width
+                            scale = 150 / scale.height
+                            #scale = 18 / scale.width
+                            scale_type = 2
+                        # spears[name_section].append(instance.height*scale)
+
+                    else:
+                        scale = 1 #no sca
+                        scale_type = 0
+                    # spears[name_section].append(scale)
+                    area = cv2.contourArea(cv2.UMat(np.expand_dims(np.array(instance.mask).astype(np.float32), 1)))
+                    bbox_xmid = (instance.bbox_xmax+instance.bbox_xmin)/2
+                    spears[name_section].append([bbox_xmid,area*scale*scale,instance.width*scale,instance.height*scale,scale_type,bbox_xmid])
+        # print(clumps)
+        # print(stalks)
+        # print(spears)
+        scale_type_dict ={0:'None',1:'Straw',2:'Bar'}
+        response = HttpResponse()
+        response['Content-Disposition'] = "attachment;filename='abc.csv'"
+        writer = csv.writer(response)
+        writer.writerow(['Demo ID:',total_id])
+        writer.writerow([''])
+        writer.writerow(['Section','Spear_ID','Area(mm2)','Width(mm)','Length(mm)','Scale_type','Direction','Distance to bar(pixs)'])
+
+
+
+        for i in range(len(section)):
+            sort_spear = sorted(spears[section[i]])
+            # print((sort_spear))
+            sort_bar = sorted(bar_section[section[i]])
+            # print((sort_bar))
+            for j in (range(len(sort_spear))):
+                for k in (range(len(sort_bar))):
+                    distance2bar = sort_spear[j][5] - sort_bar[k][0]
+                    if distance2bar > 0:
+                       Direction = 'right'
+                    elif distance2bar < 0:
+                       Direction = 'left'
+                    elif distance2bar == 0:
+                       Direction = 'mid'
+                    writer.writerow([str(section[i]),j+1,round(sort_spear[j][1],2),
+                    round(sort_spear[j][2],2),round(sort_spear[j][3],2),scale_type_dict[sort_spear[j][4]],Direction,abs(distance2bar)])
+                    # writer.writerow( spears[section[i]])
+
+    return response
+
 
 def closest_scale(scales, instance):
     c_instance = [ (instance.bbox_xmax + instance.bbox_xmin)/2, (instance.bbox_ymax + instance.bbox_ymin)/2]
@@ -288,7 +510,7 @@ def straw_detection(path):
         if v > 1000:
             straw = np.ones((len(sat), len(sat[0]))) * [label_blue == k] *255
             ret, thresh = cv2.threshold(np.float32(straw[0]), 127, 255, 0)
-            _, contours, _ = cv2.findContours(np.uint8(thresh), 1, 2)
+            _, contours, _ = cv2.findContours(np.uint8(thresh), 1, 2)            
             areas = []
             for contour in contours:
                 areas.append(cv2.contourArea(contour))
@@ -301,15 +523,16 @@ def straw_detection(path):
             widths.append(width)
     return boxes, widths
 
-
 def demo(request):
     if request.method == 'POST':
         mp.set_start_method("spawn", force=True)
         setup_logger(name="fvcore")
+        print('hello',flush=True)
         # inputs = get_latest()
         idsDemo = [ int(id) for id in request.POST['demo'].split(',')]
         straw = request.POST['straw']
         inputs = []
+        # print(idsDemo)
         if request.POST['source'] == 'scheduled':
             now = datetime.datetime.now().astimezone(pytz.timezone('Asia/Taipei'))
             oneDayBefore = now - datetime.timedelta(days=1)
@@ -332,7 +555,9 @@ def demo(request):
                     sectiondict[img.section.name] = img
             for _, img in sectiondict.items():
                 inputs.append([img.id, img.image.path])
+
             demo_model = Demo(source='manual')
+        # print(img.image.path)
         cfg = setup_cfg()
         
 
@@ -342,7 +567,7 @@ def demo(request):
 
         demo_model.save()
         demo_id = demo_model.id
-
+        # print(demo_model,flush=True)
         with open('monitor/progress.txt', 'w') as progress:
             progress.writelines('0 0')
         pro = 0
@@ -350,21 +575,23 @@ def demo(request):
             # print('start')
             img = read_image(path, format="BGR")
             start_time = time.time()
+            # print(image_id,flush=True)
             predictions, visualized_output = demo.run_on_image(img)
             # print('finish pred')
             pred_classes = predictions['instances'].pred_classes.cpu().numpy()
             pred_scores = predictions['instances'].scores.cpu().numpy()
+            print(pred_scores,flush=True)
+            # print(predictions,flush=True)
             # try:
-            #     pred_boxes = np.asarray(predictions["instances"].pred_boxes.to('cpu'))
+            #    pred_boxes = np.asarray(predictions["instances"].pred_boxes.to('cpu'))
             # except:
-            #     pass
+            #    pass
             pred_boxes = np.asarray(predictions["instances"].pred_boxes)
             # try:
-            #     pred_masks = np.asarray(predictions["instances"].pred_masks.to('cpu'))
+            #    pred_masks = np.asarray(predictions["instances"].pred_masks.to('cpu'))
             # except:
-            #     pass
+            #    pass
             pred_masks = predictions["instances"].pred_masks.cpu().numpy()
-
             pred_all = []
             for i in range(len(pred_classes)):
                 try:
@@ -385,6 +612,10 @@ def demo(request):
             resultlist.save()
             resultlist_id = resultlist.id
             # print('writing instances')
+
+
+
+
             for i in range(len(pred_classes)):
                 # print(class_id[pred_classes[i]])
                 try:
@@ -406,29 +637,68 @@ def demo(request):
                     for j, seg in enumerate(segmentation):
                         if j % 10 == 1:
                             new_segmentation.append(seg)
-                    # segmentation = new_segmentation
-                    # skeleton = skeletonization(pred_masks[i]).tolist()
-                    # height = np.count_nonzero(skeleton) ## Height of instance
+
+
                     distance_transformation = ndimage.distance_transform_edt(pred_masks[i])
-                    widths = []
-                    # for j, row in enumerate(skeleton):
-                    #     for k, p in enumerate(row):
-                    #         if p:
-                    #             widths.append(distance_transformation[j, k])
-                    # width = round((sum(widths)/len(widths)), 2) ## Width of instance
-                    for row in distance_transformation:
-                        width = max(row)
-                        if width != 0:
-                            widths.append(width)
-                    width = max(widths)
-                    # skeleton = pcv.morphology.skeletonize(mask=pred_masks[i])
-                    props = measure.regionprops(pred_masks[i].astype(np.uint8))
+                    # props = measure.regionprops((pred_masks[i].T).astype(np.uint8))
+                    props = measure.regionprops((pred_masks[i]).astype(np.uint8))
+                    contour = measure.find_contours(pred_masks[i],0.8)
+                    
                     height = props[0].major_axis_length
-                    # segmented_img, obj = pcv.morphology.segment_skeleton(skel_img=skeleton)
-                    # labeled_img = pcv.morphology.segment_path_length(segmented_img=segmented_img, objects=obj, label="default")
-                    # path_lengths = pcv.outputs.observations['default']['segment_path_length']['value']
-                    # height = max(path_lengths)
-                
+                    width = props[0].minor_axis_length
+
+                    image_size = (1920,1080)
+                    angle = props[0].orientation*180/(math.pi)
+                    centroid = props[0].centroid
+                    mask_t_uint255 = (pred_masks[i].astype(np.uint8)*255)
+                    # centroid = (int(centroid[0]),int(centroid[1]))
+                    M = cv2.getRotationMatrix2D(centroid,-angle,1.0)
+                    rotatedimg = cv2.warpAffine(mask_t_uint255,M,image_size)
+                    edges = (feature.canny(rotatedimg).astype(np.uint8)*255)
+                    point_left = (int(centroid[0]-width),int(centroid[1]-height/2))
+                    point_right = (int(centroid[0]+width),int(centroid[1]+height/2))
+                    new_image_crop = rotatedimg[point_left[1]:point_right[1],point_left[0]:point_right[0]]
+
+                    point_left = (int(centroid[0]-width/2),int(centroid[1]-height/2))
+                    point_right = (int(centroid[0]+width/2),int(centroid[1]+height/2))
+                    new_image_crop1 = rotatedimg[point_left[1]:point_right[1],point_left[0]:point_right[0]]
+                    
+                    point_left = (int(centroid[0]-width),int(centroid[1]-height/4))
+                    point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
+                    new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
+                     
+                    # if instance.predicted_class == 'spear' :
+                    #     # print(spear_num,instance.predicted_class,' angle : ',angle,' height : ',height*scale)
+                    #     if height*scale>150 and scale != 0:
+                    #         point_left = (int(centroid[0]-width),int((centroid[1]+height/2)-(100/scale)-(height/4)))
+                    #         point_right = (int(centroid[0]+width),int((centroid[1]+height/2)-(100/scale)+(height/4)))
+                    #         new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
+                    #         # cv2.imwrite(str(instance.predicted_class)+'image_crop2'+str(spear_num)+'.jpg', new_image_crop2)
+                    #         # cv2.imwrite(str(instance.predicted_class)+'image_crop1'+str(spear_num)+'.jpg', edges)
+
+                    #     else:
+                    point_left = (int(centroid[0]-width),int(centroid[1]-height/4))
+                    point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
+                    new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
+                    # cv2.imwrite(str(instance.predicted_class)+'image_crop2'+str(spear_num)+'.jpg', new_image_crop2)
+                    # cv2.imwrite(str(instance.predicted_class)+'image_crop1'+str(spear_num)+'.jpg', edges)                   
+
+                    try:
+                        indices = np.where(new_image_crop2 != [0])
+                        indices1 = indices[1]<width
+                        indices_left = [ indices[1][i] for i in range(len(indices[1])) if indices[1][i]<width]
+                        indices_right = [ indices[1][i] for i in range(len(indices[1])) if indices[1][i]>width]
+                        canny_x_start = sum(indices_left)/len(indices_left)
+                        canny_x_end = sum(indices_right)/len(indices_right)
+                        width = abs(canny_x_end-canny_x_start)
+                    except:
+                        width = props[0].minor_axis_length
+
+
+                    skeleton = (skeletonize(pred_masks[i].astype(np.uint8))).astype(np.uint8)
+                    height = int(np.sum(skeleton))
+
+                    
                 instance = Instance(predicted_class=class_id[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=resultlist_id)
                 instance.save()
             # straw detection
@@ -444,3 +714,212 @@ def demo(request):
             with open('monitor/progress.txt', 'w') as progress:
                 progress.writelines(str(pro)+' '+str(len(inputs)))
     return HttpResponse('Success')
+
+
+
+def updated(request):
+    if request.method == 'POST':
+        mp.set_start_method("spawn", force=True)
+        setup_logger(name="fvcore")
+        # inputs = get_latest()
+        demos = [d for d in Demo.objects.all()] # {{ demolist.name }} form
+        demo_range = [ [d.id, d.name] for d in Demo.objects.all()]
+        sections = [ s for s in Section.objects.all()]
+        updated_id = 176
+        inputs,inputs_section,inputs_image_list,inputs_image_path,image_id,result_id = [],[],[],[],[],[]
+        inputs_section = []
+        inputs_image_list = []
+        inputs_image_path =[]
+        image_id = []
+        result_id = []
+
+        # resultlist = ResultList.objects.filter(demo__id=demo_id)
+        # resultlist = resultlist.filter(image__section__name=section)[0]
+        # image_id = resultlist.image.id
+        # for img in ImageList.objects.filter(date__range=[oneDayBefore, now]):
+        # name_demo = demo.name
+        # image_id = []
+
+        for result in ResultList.objects.filter(demo__id=updated_id):
+            name_result = result.image
+            image_id.append(result.image.id)
+            section_result = name_result.section.name
+            result_id.append(result.id)
+            # path = result.path
+            # inputs.append(name_result)
+            inputs_section.append(section_result)
+        image_id = set(image_id)
+        print(image_id)
+        print(max(result_id))
+        max_result_id = max(result_id)
+        print(max_result_id)
+  
+        sectiondict = {}
+        imgs = [ImageList.objects.get(id=id) for id in image_id]
+        print("imgs : ", imgs )
+            # for instance in str(result.id):
+            #     print(instance.path)
+
+        for img in imgs:
+            if img.section.name not in sectiondict:
+                sectiondict[img.section.name] = img
+            elif img.date > sectiondict[img.section.name].date:
+                sectiondict[img.section.name] = img
+        for _, img in sectiondict.items():
+            inputs.append([img.id, img.image.path])
+        print(inputs)
+
+        cfg = setup_cfg()
+
+
+        # # print(result_id)
+
+
+
+        demo = VisualizationDemo(cfg)
+        class_id = {1: 'clump', 2: 'stalk' , 3: 'spear', 4: 'bar', 5:'straw'}
+        spear_num = 0
+        pro = 0
+ 
+
+        for image_id, path in tqdm.tqdm(inputs):
+            img = read_image(path, format="BGR")
+            start_time = time.time()
+            predictions, visualized_output = demo.run_on_image(img)
+            # print('finish pred')
+            pred_classes = predictions['instances'].pred_classes.cpu().numpy()
+            pred_scores = predictions['instances'].scores.cpu().numpy()
+            print(pred_classes)
+            #try:
+            #    pred_boxes = np.asarray(predictions["instances"].pred_boxes.to('cpu'))
+            #except:
+            #    pass
+            pred_boxes = np.asarray(predictions["instances"].pred_boxes)
+            #try:
+            #    pred_masks = np.asarray(predictions["instances"].pred_masks.to('cpu'))
+            #except:
+            #    pass
+            pred_masks = predictions["instances"].pred_masks.cpu().numpy()
+
+            pred_all = []
+            for i in range(len(pred_classes)):
+                try:
+                    pred_all.append([pred_classes[i], pred_scores[i], pred_boxes[i], pred_masks[i]])
+                except:
+                    pass
+            pred_all = sorted(pred_all, key=lambda x: x[0])
+
+            pred_classes, pred_scores, pred_boxes, pred_masks = [], [], [], []
+            for i in range(len(pred_all)):
+                pred_classes.append(pred_all[i][0])
+                pred_scores.append(pred_all[i][1])
+                pred_boxes.append(pred_all[i][2])
+                pred_masks.append(pred_all[i][3])
+
+            # print('start resultlist')
+            resultlist = ResultList(image_id=image_id, demo_id=updated_id)
+            # resultlist.save()
+            resultlist_id = resultlist.id
+
+            # print('writing instances')
+            for i in range(len(pred_classes)):
+                print(class_id[pred_classes[i]])
+                try:
+                    bbox = pred_boxes[i].cpu().numpy().tolist() ## BBox of instance
+                except:
+                    bbox = [0 ,0, 0, 0]
+                segmentation = pred_masks[i]
+                try:
+                    segmentation = measure.find_contours(segmentation.T, 0.5)[0].tolist()
+                except:
+                    segmentation = []
+                if pred_classes[i] == 1:
+                    height = bbox[3] - bbox[1]
+                    width = bbox[2] - bbox[0]
+                elif segmentation == []:
+                    continue
+                else:
+                    new_segmentation = []
+                    for j, seg in enumerate(segmentation):
+                        if j % 10 == 1:
+                            new_segmentation.append(seg)
+                    image_size = (1920,1080)
+                    polygon = np.array(segmentation)
+                    straw_mask = polygon2mask(image_size,polygon)
+                    props_per = measure.regionprops(straw_mask.astype(np.uint8))
+                    straw_mask_t = straw_mask.T
+                    props = measure.regionprops(straw_mask_t.astype(np.uint8))
+                    straw_mask_t_uint255 = (straw_mask_t.astype(np.uint8)*255)
+
+
+                    skeleton = (skeletonize(straw_mask_t.astype(np.uint8))).astype(np.uint8)
+                    height = int(np.sum(skeleton))
+                    # print(height)
+                    # cv2.imwrite(str(instance.predicted_class)+'skeleton.jpg', skeleton*255)
+
+                    width =  props[0].minor_axis_length
+                    heith =  props[0].major_axis_length
+
+
+                    angle = props[0].orientation*180/(math.pi)
+                    centroid = props_per[0].centroid
+                    # centroid = (int(centroid[0]),int(centroid[1]))
+                    M = cv2.getRotationMatrix2D(centroid,-angle,1.0)
+                    rotatedimg = cv2.warpAffine(straw_mask_t_uint255,M,image_size)
+                    edges = (feature.canny(rotatedimg).astype(np.uint8)*255)
+                    point_left = (int(centroid[0]-width),int(centroid[1]-heith/2))
+                    point_right = (int(centroid[0]+width),int(centroid[1]+heith/2))
+                    new_image_crop = straw_mask_t[point_left[1]:point_right[1],point_left[0]:point_right[0]]
+
+                    point_left = (int(centroid[0]-width/2),int(centroid[1]-heith/2))
+                    point_right = (int(centroid[0]+width/2),int(centroid[1]+heith/2))
+                    new_image_crop1 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
+
+                    point_left = (int(centroid[0]-width),int(centroid[1]-heith/4))
+                    point_right = (int(centroid[0]+width),int(centroid[1]+heith/4))
+                    new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
+
+                    # if instance.predicted_class == "spear":
+                    #     cv2.imwrite(str(instance.predicted_class)+'image_crop2'+str(i)+'.jpg', new_image_crop2)
+                    #     cv2.imwrite(str(instance.predicted_class)+'image_crop1'+str(i)+'.jpg', edges)
+
+
+                    indices = np.where(new_image_crop2 != [0])
+                    indices1 = indices[1]<width
+                    indices2 = [ indices[1][i] for i in range(len(indices[1])) if indices[1][i]<width]
+                    indices3 = [ indices[1][i] for i in range(len(indices[1])) if indices[1][i]>width]
+
+                    try:
+                        canny_x_start = sum(indices2)/len(indices2)
+                        canny_x_end = sum(indices3)/len(indices3)
+                        # print('width : ',canny_x_end-canny_x_start)
+                        cv2.circle(rotatedimg,(int(centroid[0]),int(centroid[1])), 5, (0, 0, 0), -1)
+                        width = abs(canny_x_end-canny_x_start)
+                    except:
+                        width = width
+                    # print(instance.predicted_class,width)
+                                        # print(class_id[pred_classes[i]],height)
+
+                    # skeleton = (skeletonize(straw_mask_t.astype(np.uint8))).astype(np.uint8)
+                    # height = int(np.sum(skeleton))
+
+                    # print(class_id[pred_classes[i]],height)
+                    # cv2.imwrite(str(class_id[pred_classes[i]])+'skeleton.jpg', skeleton*255)
+
+                # add updated list
+                instance = Instance(predicted_class=class_id[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=resultlist_id)
+                instance.save()
+                print(max_result_id)
+                # adjust list and replace
+                # Instance.objects.filter(resultlist_id=max_result_id).update(predicted_class=class_id[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width)
+                # instance.predicted_class = "stalk"
+                # instance.save()
+                # print(max_result_id,'  ',height,flush=True)
+
+            pro += 1
+            with open('monitor/progress_updated.txt', 'w') as progress:
+                progress.writelines(str(pro)+' '+str(len(inputs)))
+
+
+    return HttpResponse('Success')
+

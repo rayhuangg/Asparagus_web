@@ -32,6 +32,9 @@
     </div>
 
     <div class="col-6 col-lg-3 order-lg-3" id="rightCol" style="margin-bottom: 4rem;">
+        <div class="col-6" style="margin: auto; margin-top: auto;">
+            <button class="btn btn-primary" id="downloadexcel" data-imageid="" onclick="downloadexcel(this.getAttribute('data-imageid2'))">Download All Regions (.xlsx)</button>
+        </div>
         <div class="toast" id="totalToast" role="alert" aria-live="assertive" aria-atomic="true" style="margin: auto; margin-top: 4rem;">
             <div class="toast-header" style="font-size: x-large;">
                 <img src="" class="rounded mr-2" alt="">
@@ -52,7 +55,7 @@
                     </div>
                     <div class="col" style="padding-right: 0;">
                         <button class="btn btn-primary" id="downloadjson" data-imageid="" onclick="downloadJSON(this.getAttribute('data-imageid'))">Download json</button>
-                    </div>
+                    </div>                    
                 </div>
                 
             </div>
@@ -101,7 +104,8 @@
 
 
     var containerDiv = document.getElementById('btns')
-
+    var total_id = document.getElementById('inputGroup1').value
+    
     for (var i = 0; i < 37; i++) {
         var rowDiv = document.createElement('div');
         rowDiv.className = 'row no-gutters align-items-center';
@@ -150,24 +154,46 @@
     function downloadImage(id){
         fetch('download')
     }
+    
 
     function downloadJSON(id){
         fetch('downloadjson/' + id.toString() + '/', {method: 'POST'})
         .then(res => {
             return res.blob()
         }).then(res => {
-            // console.log(res)
+            console.log(res)
             var url = window.URL.createObjectURL(res)
+            console.log(url)
             var a = document.createElement('a')
             a.style.display = 'none'
             a.href = url
             a.download = id.toString() + '.json'
+            console.log(a.download) 
             document.body.appendChild(a)
             a.click()
             window.URL.revokeObjectURL(url)
         })
     }
 
+
+    function downloadexcel(total_id){
+        fetch('downloadexcel/'+ total_id.toString() + '/', {method: 'POST'})
+        .then(res => {
+            return res.blob()
+        }).then(res => {
+            //var total_id = document.getElementById('inputGroup1').value
+            console.log(total_id)
+            var url = window.URL.createObjectURL(res)
+            var a = document.createElement('a')
+            a.style.display = 'none'
+            a.href = url
+            a.download = total_id.toString() + '.csv'
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+        })
+    }
+    
     function sendDemoId(){
         $.ajax({
             url:'sendDemoId',
@@ -194,6 +220,7 @@
             }
         })
     }
+    
 
     function rescale(counts, oldsize, newsize){
         var newcounts = [];
@@ -274,7 +301,8 @@
                     document.getElementById('spear').innerHTML = 'Spear: '+spear.toString();
                     document.getElementById('downloadimage').href = context['image']
                     document.getElementById('downloadjson').setAttribute('data-imageid', context['id'])
-                    
+                    var total_id = document.getElementById('inputGroup1').value
+                    document.getElementById('downloadexcel').setAttribute('data-imageid2', total_id)
                     // img.after(svg)
                     midCol.append(svg)
                     $('#totalToast').toast({
@@ -375,7 +403,11 @@
             p_pred_length.id = 'predLength'
             var h1 = height * scale / 10
             var h2 = predLength(thermalTime, h1, 24)
+            //console.log(h1)
             p_pred_length.innerHTML = 'Length in <select id = "thermaltimeselect"></select> hrs: ' + h2.toFixed(2).toString() + ' mm'
+            if (isNaN(h2)){
+                p_pred_length.innerHTML = 'Length in <select id = "thermaltimeselect"></select> hrs : Harvestable ' 
+            }
             var thermaltimeselect = p_pred_length.getElementsByTagName('select')[0]
             console.log(thermaltimeselect)
             for(let i = 23; i >= 0; i --){
@@ -457,11 +489,14 @@
 
     function predLength(thermalTime, h1, hrs) {
         var t1 = (1.409 - Math.log(Math.log(31.91 / h1)))/0.001397
+        console.log(t1)
         var t2 = t1
         for(let i = 0; i < hrs; i++){
+            console.log(hrs)
             t2 += thermalTime[i]
         }
         var h2 = 31.91 * Math.exp(-1 * Math.exp(1.409 - 0.001397 * t2)) * 10
+        console.log(h2)
         return h2
     }
 

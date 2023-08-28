@@ -28,7 +28,7 @@ def index(request):
         try:
             latest_img = ImageList.objects.filter(section__name=section.name).latest()
             timedelta = now - latest_img.date.astimezone(pytz.timezone('Asia/Taipei'))
-            if timedelta.total_seconds() >= 3600*3:
+            if timedelta.total_seconds() >= 360:
                 level = 'warning'
                 if timedelta.total_seconds() >= 3600*24:
                     level = 'danger'
@@ -89,7 +89,11 @@ def side(request):
             ImageList(section=section, name=name, image=image).save()
 
             image = ImageList.objects.latest().image.path
-            uploadtosql(request.POST['section'], image, side)
+
+
+            # upload to Joe's lab
+            # uploadtosql(request.POST['section'], image, side)
+
         else:
             print(form.errors)
     else:
@@ -120,7 +124,7 @@ def uploadtosql(location, image, side):
     FTPPORT= 3837
     USERNAME= "asparagus"
     USERPWD= "asparagus303"
-    ftp.connect(FTPIP, FTPPORT)
+    ftp.connect(FTPIP, FTPPORT,timeout=3)
     ftp.login(USERNAME,USERPWD)
     # print("[FTP] Login...")
     # print(ftp.getwelcome())
