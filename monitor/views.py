@@ -31,7 +31,7 @@ from pycocotools import mask
 from plantcv import plantcv as pcv
 import pymysql.cursors
 from .sql_chiang import thermalTime
-import math 
+import math
 from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
@@ -72,7 +72,7 @@ def index(request):
                 scale = closest_scale(scales, instance)
                 if scale != 0:
                     if scale.predicted_class == 'straw':
-                        scale_width = 10 / scale.width ## the width of straw is 10 mm, so 
+                        scale_width = 10 / scale.width ## the width of straw is 10 mm, so
                         scale = 200 / scale.height
                     else:
                         scale_width = 18 / scale.width
@@ -83,7 +83,7 @@ def index(request):
             else:
                 scale = instance.height
                 scale_width = instance.width
-            
+
             height = instance.height
             width = instance.width
             # context['instance'].append({'class': instance.predicted_class,
@@ -95,8 +95,8 @@ def index(request):
             #                             'width' : instance.width,
             #                             'scale': scale,
             #                             })
-    
-            if instance.predicted_class == 'bar' or instance.predicted_class == 'straw'or scale ==0:    
+
+            if instance.predicted_class == 'bar' or instance.predicted_class == 'straw'or scale ==0:
                 context['instance'].append({'class': instance.predicted_class,
                                             'score': instance.score,
                                             'bbox': [instance.bbox_xmin, instance.bbox_ymin, instance.bbox_xmax, instance.bbox_ymax],
@@ -168,7 +168,7 @@ def downloadJSON(request, id):
                     "flags": {}
                 }
             content["shapes"].append(shape)
-        
+
         return HttpResponse(json.dumps(content, indent=2))
     return HttpResponse(json.dumps({"PAIN": "PEKO"}))
 
@@ -177,11 +177,11 @@ def downloadJSON(request, id):
 #     if request.method == 'POST':
 #         resultlists = ResultList.objects.filter(demo__id=total_id)
 #         section = []
-#         #print(resultlists)  
+#         #print(resultlists)
 #         demolist = [ d for d in Demo.objects.all()]
 #         clumps, stalks, spears, bar_section = {} , {} , {} , {}
-        
-        
+
+
 #         for result in resultlists:
 #             name_section = result.image.section.name
 #             section.append(name_section)
@@ -203,31 +203,31 @@ def downloadJSON(request, id):
 #                     stalks[name_section] += 1
 #                 elif instance.predicted_class == 'bar':
 #                     bar_xmid = (instance.bbox_xmax+instance.bbox_xmin)/2
-#                     bar_section[name_section].append([bar_xmid]) 
+#                     bar_section[name_section].append([bar_xmid])
 #                 elif instance.predicted_class == 'spear':
 #                     if len(scales) != 0:
 #                         scale = closest_scale(scales, instance)
 #                         if scale.predicted_class == 'straw' :
-#                             # scale = 10 / scale.width 
-#                             scale = 200 / scale.height 
+#                             # scale = 10 / scale.width
+#                             scale = 200 / scale.height
 #                             scale_type = 1
-#                         else: 
-#                             scale = 150 / scale.height 
+#                         else:
+#                             scale = 150 / scale.height
 #                             # scale = 18 / scale.width
 #                             scale_type = 2
 #                         #spears[name_section].append(instance.height*scale)
 #                     else:
 #                         scale = 1 #no sca
 #                         scale_type = 0
-#                         
-                        
+#
+
 #                     #spears[name_section].append(scale)
 #                     area = cv2.contourArea(cv2.UMat(np.expand_dims(np.array(instance.mask).astype(np.float32), 1)))
 #                     bbox_xmid = (instance.bbox_xmax+instance.bbox_xmin)/2
 #                     # print(scale)
 #                     spears[name_section].append([bbox_xmid,area*scale*scale,instance.width*scale,instance.height*scale,scale_type,bbox_xmid])
-            
-            
+
+
         #print(spears)
         #print(section)
 #         scale_type_dict ={0:'None',1:'Straw',2:'Bar'}
@@ -237,7 +237,7 @@ def downloadJSON(request, id):
 #         writer.writerow(['Demo ID:',total_id])
 #         writer.writerow([''])
 #         writer.writerow(['Section','Spear_ID','Area(mm2)','Width(mm)','Length(mm)','Scale_type','Direction','Position to bar'])
-#         for i in range(len(section)): 
+#         for i in range(len(section)):
 #             sort_spear = sorted(spears[section[i]])
 #             # print((sort_spear))
 #             sort_bar = sorted(bar_section[section[i]])
@@ -250,11 +250,11 @@ def downloadJSON(request, id):
 #                     elif distance2bar < 0:
 #                        Direction = 'left'
 #                     elif distance2bar == 0:
-#                        Direction = 'mid'    
+#                        Direction = 'mid'
 #                     writer.writerow([str(section[i]),j+1,round(sort_spear[j][1],2),
 #                     round(sort_spear[j][2],2),round(sort_spear[j][3],2),scale_type_dict[sort_spear[j][4]],Direction,abs(distance2bar)])
 #                     #writer.writerow( spears[section[i]])
-        
+
 #    return response
 
 
@@ -485,7 +485,7 @@ def straw_detection(path):
             areas = []
             for contour in contours:
                 areas.append(cv2.contourArea(contour))
-            
+
             cnt = contours[areas.index(max(areas))]
             rect = cv2.minAreaRect(cnt)
             box = cv2.boxPoints(rect)
@@ -510,7 +510,7 @@ def straw_detection(path):
         if v > 1000:
             straw = np.ones((len(sat), len(sat[0]))) * [label_blue == k] *255
             ret, thresh = cv2.threshold(np.float32(straw[0]), 127, 255, 0)
-            _, contours, _ = cv2.findContours(np.uint8(thresh), 1, 2)            
+            _, contours, _ = cv2.findContours(np.uint8(thresh), 1, 2)
             areas = []
             for contour in contours:
                 areas.append(cv2.contourArea(contour))
@@ -559,7 +559,7 @@ def demo(request):
             demo_model = Demo(source='manual')
         # print(img.image.path)
         cfg = setup_cfg()
-        
+
 
         demo = VisualizationDemo(cfg)
 
@@ -643,7 +643,7 @@ def demo(request):
                     # props = measure.regionprops((pred_masks[i].T).astype(np.uint8))
                     props = measure.regionprops((pred_masks[i]).astype(np.uint8))
                     contour = measure.find_contours(pred_masks[i],0.8)
-                    
+
                     height = props[0].major_axis_length
                     width = props[0].minor_axis_length
 
@@ -662,11 +662,11 @@ def demo(request):
                     point_left = (int(centroid[0]-width/2),int(centroid[1]-height/2))
                     point_right = (int(centroid[0]+width/2),int(centroid[1]+height/2))
                     new_image_crop1 = rotatedimg[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-                    
+
                     point_left = (int(centroid[0]-width),int(centroid[1]-height/4))
                     point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
                     new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-                     
+
                     # if instance.predicted_class == 'spear' :
                     #     # print(spear_num,instance.predicted_class,' angle : ',angle,' height : ',height*scale)
                     #     if height*scale>150 and scale != 0:
@@ -681,7 +681,7 @@ def demo(request):
                     point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
                     new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
                     # cv2.imwrite(str(instance.predicted_class)+'image_crop2'+str(spear_num)+'.jpg', new_image_crop2)
-                    # cv2.imwrite(str(instance.predicted_class)+'image_crop1'+str(spear_num)+'.jpg', edges)                   
+                    # cv2.imwrite(str(instance.predicted_class)+'image_crop1'+str(spear_num)+'.jpg', edges)
 
                     try:
                         indices = np.where(new_image_crop2 != [0])
@@ -698,7 +698,7 @@ def demo(request):
                     skeleton = (skeletonize(pred_masks[i].astype(np.uint8))).astype(np.uint8)
                     height = int(np.sum(skeleton))
 
-                    
+
                 instance = Instance(predicted_class=class_id[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=resultlist_id)
                 instance.save()
             # straw detection
@@ -753,7 +753,7 @@ def updated(request):
         print(max(result_id))
         max_result_id = max(result_id)
         print(max_result_id)
-  
+
         sectiondict = {}
         imgs = [ImageList.objects.get(id=id) for id in image_id]
         print("imgs : ", imgs )
@@ -780,7 +780,7 @@ def updated(request):
         class_id = {1: 'clump', 2: 'stalk' , 3: 'spear', 4: 'bar', 5:'straw'}
         spear_num = 0
         pro = 0
- 
+
 
         for image_id, path in tqdm.tqdm(inputs):
             img = read_image(path, format="BGR")

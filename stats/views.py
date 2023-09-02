@@ -101,5 +101,5 @@ def checkRange(request):
                         spears[name_section].append(instance.height)
                     else:
                         spears[name_section].append(0)
-        
+
         return HttpResponse(json.dumps({'clumps': clumps, 'stalks': stalks, 'spears': spears, 'thermaltime': thermaltime}))

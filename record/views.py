@@ -98,7 +98,7 @@ def side(request):
             print(form.errors)
     else:
         form = ImageListForm()
-        
+
     return render(request, 'record/record.html', {'form': form})
 
 @csrf_exempt
@@ -113,7 +113,7 @@ def front(request):
             print(form.errors)
     else:
         form = FrontViewForm()
-        
+
     return render(request, 'record/record.html', {'form': form})
 
 def uploadtosql(location, image, side):

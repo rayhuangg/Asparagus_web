@@ -15,7 +15,7 @@ class InstanceInline(admin.TabularInline):
     model = Instance
     exclude = ['created',]
     extra = 0
-    
+
 class ResultListAdmin(admin.ModelAdmin):
     fieldsets = [(None, {'fields': ['name']}),
                  (None, {'fields': ['date']}),

@@ -146,7 +146,7 @@ def main():
                 points.append([xmin, ymin])
                 points.append([xmin, ymax])
                 points.append([xmax, ymax])
-                points.append([xmax, ymin])                
+                points.append([xmax, ymin])
 
             points = np.asarray(points).flatten().tolist()
             segmentations[instance].append(points)

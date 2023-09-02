@@ -74,7 +74,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                 </div>
             </form>
         </div>
@@ -182,7 +182,7 @@
             option.text = "...";
             untilSelect.append(option);
         }
-        
+
     }
 
     function sendRange(){
@@ -195,7 +195,7 @@
                 untilValue: document.getElementById('floatingSelect-until').value,
             },
             success: function(context){
-                
+
                 var allBtns = document.getElementsByTagName('button')
                 // console.log(allBtns)
                 for (let btn of allBtns){
@@ -231,13 +231,13 @@
                     }else{
                         continue
                     }
-                    
+
                 }
                 document.getElementById('floatingSelect-hours').setAttribute('data-thermaltime', context['thermaltime'])
                 document.getElementById('btns').style.opacity = '100%'
             }
         })
-        
+
     }
 
     function chooseType(){
@@ -295,7 +295,7 @@
                     predL = predL.filter(l => l >= thres)
                     btn.textContent = predL.length
                 }
-            } 
+            }
         }
         for (let btn of allBtns){
             if (btn.id.length > 1 && hours != 0 && thres != 0){
@@ -390,14 +390,14 @@
     //                                 fontSize :16
     //                             }
     //                         }],
-                            
+
     //                     }
-                        
+
     //                 }
     //             });
     //         }
     //     })
-        
+
     // }
 </script>
 

@@ -145,7 +145,7 @@ def main(args):
     register_coco_instances('asparagus_val', {'_background_': 0, 'clump': 1, 'stalk': 2, 'spear': 3} , "./datasets/coco/annotations/test/annotations.json", "./datasets/coco/annotations/test")
     #register_coco_instances('asparagus_bme_train', {'_background_': 0, 'clump': 1, 'stalk': 2, 'spear': 3} , "./datasets/coco/annotations/BME_train/annotations.json", "./datasets/coco/annotations/BME_train")
     #register_coco_instances('asparagus_bme_val', {'_background_': 0, 'clump': 1, 'stalk': 2, 'spear': 3} , "./datasets/coco/annotations/BME_test/annotations.json", "./datasets/coco/annotations/BME_test")
-    
+
     cfg = setup(args)
 
     if args.eval_only:
