@@ -27,6 +27,7 @@ SECRET_KEY = '#qr$i8z0=m8$e4)a%v44bj+6!5q)t6n0ph8)jdmlfsh7icm25d'
 DEBUG = True
 
 ALLOWED_HOSTS = ['localhost',
+                '192.168.50.97',
                 '192.168.50.200',
                 '140.112.183.138',
                 'digiag.bime.ntu.edu.tw'
