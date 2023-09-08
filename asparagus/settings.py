@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     'lidar.apps.LidarConfig',
     'sorl.thumbnail',
     'celery_progress',
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
