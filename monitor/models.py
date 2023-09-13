@@ -6,6 +6,7 @@ from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from record.models import ImageList
 
+
 class Demo(models.Model):
     name = models.CharField(max_length=100, default=str(datetime.now().strftime('%Y%m%d_%H%M%S')))
     date = models.DateTimeField(default=now)
@@ -18,7 +19,7 @@ class Demo(models.Model):
         ordering = ['-date']
         get_latest_by = 'date'
 
-# Create your models here.
+
 class ResultList(models.Model):
     name = models.CharField(max_length=100, default=str(datetime.now().strftime('%Y%m%d_%H%M%S')))
     date = models.DateTimeField(default=now)
