@@ -14,7 +14,7 @@ from .models import Section, ImageList, FrontView
 #         if data not in section_names:
 #             raise ValidationError(_('Invalid section name'))
 #         return data
-    
+
 class ImageListForm(forms.ModelForm):
     section = forms.ModelChoiceField(queryset=Section.objects.all(), to_field_name='name')
     def __init__(self, *args, **kwargs):
@@ -32,7 +32,7 @@ class FrontViewForm(forms.ModelForm):
         self.fields['name'].required = False
         self.fields['date'].required = False
         self.fields['focus'].required = False
-        
+
     class Meta:
         model = FrontView
         fields = '__all__'

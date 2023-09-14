@@ -216,11 +216,11 @@ if __name__ == "__main__":
                 # print(predictions)
                 # json_output(args.json_output, predictions, filename, path)
                 # with open('inference_result.txt', 'wb') as resultfile:
-                #    for 
+                #    for
                 # print(np.asarray(predictions["instances"].pred_boxes[0])[0].cpu().numpy())
                 # print(len(predictions["instances"].pred_boxes[0]))
                 # print(type(np.asarray(predictions["instances"].pred_boxes[0])[0].cpu().numpy()))
-                
+
 
                 # print(predictions['instances'].pred_masks.cpu().numpy()[1])
                 # testmask = predictions['instances'].pred_masks.cpu().numpy()[1]

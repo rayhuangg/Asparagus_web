@@ -56,7 +56,7 @@
             Demo
             </button>
         </div>
-        
+
     </div>
     <div class="row">
         <div class="col">
@@ -74,7 +74,7 @@
                                     <input type="datetime-local" id="datetimeEnd" onchange="showdemoRange()">
                                 </div>
                                 <div class="input-group mb-3">
-                                    
+
                                     <div class="input-group-text">
                                         <input id="straw" class="form-check-input mt-0" type="checkbox" value="" style="margin-right: 1rem;">
                                         Straw detection
@@ -96,7 +96,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                     </div>
                 </div>
             </div>
@@ -159,7 +159,7 @@
                         </div>
                         {% endfor %}
                     </div>
-                    
+
                 </div>
             </div>
         </div>
@@ -230,7 +230,7 @@
 
     var modal = document.getElementById('modal')
     modal.addEventListener('show.bs.modal', e=>{
-        
+
         let btn = e.relatedTarget
         let section = btn.getAttribute('data-bs-section')
         // console.log(section)
@@ -303,7 +303,7 @@
     //             document.getElementById('demoSpan').style.display = '';
     //             document.getElementById('demo').innerText = 'Demo';
     //         },
-            
+
     //     });
     // };
 
@@ -325,7 +325,7 @@
             success: function() {
                 document.getElementById('demoGo').style.display = 'Go';
             },
-            
+
         });
     };
 

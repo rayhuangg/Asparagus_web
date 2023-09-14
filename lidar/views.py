@@ -43,8 +43,8 @@ def scan(request):
             scan.save()
         else:
             print(form.errors)
-            
+
     else:
         form = ScanForm()
-        
+
     return render(request, 'lidar/lidar.html', {'form': ScanForm})

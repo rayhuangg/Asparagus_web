@@ -55,9 +55,9 @@
                     </div>
                     <div class="col" style="padding-right: 0;">
                         <button class="btn btn-primary" id="downloadjson" data-imageid="" onclick="downloadJSON(this.getAttribute('data-imageid'))">Download json</button>
-                    </div>                    
+                    </div>
                 </div>
-                
+
             </div>
         </div>
         <div id="clumpToast"></div>
@@ -105,7 +105,7 @@
 
     var containerDiv = document.getElementById('btns')
     var total_id = document.getElementById('inputGroup1').value
-    
+
     for (var i = 0; i < 37; i++) {
         var rowDiv = document.createElement('div');
         rowDiv.className = 'row no-gutters align-items-center';
@@ -154,7 +154,7 @@
     function downloadImage(id){
         fetch('download')
     }
-    
+
 
     function downloadJSON(id){
         fetch('downloadjson/' + id.toString() + '/', {method: 'POST'})
@@ -168,7 +168,7 @@
             a.style.display = 'none'
             a.href = url
             a.download = id.toString() + '.json'
-            console.log(a.download) 
+            console.log(a.download)
             document.body.appendChild(a)
             a.click()
             window.URL.revokeObjectURL(url)
@@ -193,7 +193,7 @@
             window.URL.revokeObjectURL(url)
         })
     }
-    
+
     function sendDemoId(){
         $.ajax({
             url:'sendDemoId',
@@ -220,7 +220,7 @@
             }
         })
     }
-    
+
 
     function rescale(counts, oldsize, newsize){
         var newcounts = [];
@@ -310,7 +310,7 @@
                     })
                     $('#totalToast').toast('show')
                     }, 20)
-                
+
             }
         });
     }
@@ -323,7 +323,7 @@
         var scale = context['instance'][i]['scale']
         var area = context['instance'][i]['area']
         var thermalTime = context['thermaltime']
-        
+
         var rightCol = document.getElementById('rightCol')
         var lenClump = $('#clump').length;
         var lenElse = $('#elseToast').children().length;
@@ -378,7 +378,7 @@
             else{
                 p_height.innerHTML = 'Length: ' + (height*scale).toFixed(2).toString() + ' mm'
             }
-            
+
         }
         var p_width = document.createElement('p')
         if (scale == 0){
@@ -406,7 +406,7 @@
             //console.log(h1)
             p_pred_length.innerHTML = 'Length in <select id = "thermaltimeselect"></select> hrs: ' + h2.toFixed(2).toString() + ' mm'
             if (isNaN(h2)){
-                p_pred_length.innerHTML = 'Length in <select id = "thermaltimeselect"></select> hrs : Harvestable ' 
+                p_pred_length.innerHTML = 'Length in <select id = "thermaltimeselect"></select> hrs : Harvestable '
             }
             var thermaltimeselect = p_pred_length.getElementsByTagName('select')[0]
             console.log(thermaltimeselect)
@@ -465,7 +465,7 @@
             $('.toast').toast('show')
         }
         // clumpToast.append(toastdiv)
-        
+
     }
 
     function recalculate(thermalTime, h1) {
@@ -549,7 +549,7 @@
             option.text = "...";
             untilSelect.append(option);
         }
-        
+
     }
 
     function sendRange(){
@@ -609,10 +609,10 @@
                 });
             }
         })
-        
+
     }
 
-    
+
 </script>
 
 {% endblock %}

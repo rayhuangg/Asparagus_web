@@ -2,7 +2,7 @@ from django.db import models
 from django.utils.timezone import now
 from datetime import datetime
 
-# Create your models here.
+
 class Section(models.Model):
     name = models.CharField(max_length=100)
     date = models.DateTimeField('Date created', default=now)
@@ -33,6 +33,7 @@ class ImageList(models.Model):
     class Meta:
         ordering = ['-date']
         get_latest_by = "date"
+
 
 class FrontView(models.Model):
     name = models.CharField(max_length=100, default=str(datetime.now().strftime('%Y%m%d_%H%M%S')))

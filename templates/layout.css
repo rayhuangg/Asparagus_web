@@ -2,13 +2,13 @@
     padding:0;
     margin:0;
   }
-  
+
   body {
     background:#fff;
     overflow-x:hidden;
     font-family:arial;
   }
-  
+
   .transition {
     position:absolute;
     height:100%;
@@ -18,7 +18,7 @@
     transition:2s all ease-in-out;
     -webkit-transition:2s all ease-in-out;
   }
-  
+
   .content {
     position:relative;
     padding:200px 0 0 200px;
@@ -26,7 +26,7 @@
     z-index:10;
     height:300px;
   }
-  
+
   .cta {
     outline:none;
     border:none;
@@ -38,11 +38,11 @@
     margin-top:20px;
     padding:10px 40px;
   }
-  
+
   .anim-trans {
     animation: anim 4s ease-in-out;
     }
-  
+
   @keyframes anim{
        0% { }
        20%  { z-index:11;\transform: skewX(5deg) translateX(-100%); }
@@ -55,4 +55,3 @@
        100%   { transform: skewX(-5deg) translateX(-50px);
    width:30%;z-index:1; box-shadow: none;}
   }
-  
