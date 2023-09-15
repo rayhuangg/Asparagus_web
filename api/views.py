@@ -24,7 +24,7 @@ class ResultListView(generics.ListAPIView):
         ).count()
 
         if stalk_count > 25:
-            density = "low"
+            density = "high"
         elif 15 <= stalk_count <= 25:
             density = "medium"
         elif stalk_count < 15:
@@ -32,7 +32,7 @@ class ResultListView(generics.ListAPIView):
 
         # Build the response data
         response_data = {
-            "predice_time": latest_result_for_section.date.strftime("%Y-%m-%d %H:%M:%S"),
+            "predict_time": latest_result_for_section.date.strftime("%Y-%m-%d %H:%M:%S"),
             "stalk_count": stalk_count,
             "density": density,
         }
