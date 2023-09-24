@@ -366,17 +366,36 @@ def downloadexcel(request,total_id):
 
 
 def closest_scale(scales, instance):
-    c_instance = [ (instance.bbox_xmax + instance.bbox_xmin)/2, (instance.bbox_ymax + instance.bbox_ymin)/2]
-    max_dist = np.inf
-    max_scale = 0
+    """
+    This function finds the closest scale to a given instance among a list of scales.
+
+    Parameters:
+        scales (list): A list containing multiple scale.
+        instance (dict): A dictionary containing information about the target instance.
+
+    Returns:
+        dict: The scale from the 'scales' list that is closest to the target instance based on centroid proximity.
+
+    """
+    # Calculate the centroid of the target instance
+    instance_center = [(instance.bbox_xmax + instance.bbox_xmin)/2, (instance.bbox_ymax + instance.bbox_ymin)/2]
+    min_dist = np.inf
+    closest_scale = 0
+
+    # Iterate through each scale and find the closest one to the  instance
     for scale in scales:
         mask_scale = np.array(scale.mask)
-        c_scale = [np.mean(mask_scale[:, 0]), np.mean(mask_scale[:, 1])]
-        dist = (c_instance[0]-c_scale[0])**2 + (c_instance[1]-c_scale[1])**2
-        if dist < max_dist:
-            max_dist = dist
-            max_scale = scale
-    return max_scale
+        scale_center = [np.mean(mask_scale[:, 0]), np.mean(mask_scale[:, 1])]
+
+        # Calculate the squared distance between the centroids
+        dist = (instance_center[0]-scale_center[0])**2 + (instance_center[1]-scale_center[1])**2
+
+        # Update the closest scale if the current scale is closer
+        if dist < min_dist:
+            min_dist = dist
+            closest_scale = scale
+
+    return closest_scale
 
 
 def checkDemoId(request):
@@ -523,14 +542,15 @@ def straw_detection(path):
             widths.append(width)
     return boxes, widths
 
+# Function handle the when the record page demo buttom pressed
 def demo(request):
     if request.method == 'POST':
         mp.set_start_method("spawn", force=True)
         setup_logger(name="fvcore")
-        print('hello',flush=True)
+        print('hello, start inference',flush=True)
         # inputs = get_latest()
-        idsDemo = [ int(id) for id in request.POST['demo'].split(',')]
-        straw = request.POST['straw']
+        idsDemo = [int(id) for id in request.POST['demo'].split(',')] # the image id to be detected
+        straw = request.POST['straw'] # Straw detection buttom, current not used.(Adam)
         inputs = []
         # print(idsDemo)
         if request.POST['source'] == 'scheduled':
@@ -545,6 +565,8 @@ def demo(request):
             for _, img in sectiondict.items():
                 inputs.append([img.id, img.image.path])
             demo_model = Demo(source='scheduled')
+
+        # manual press demo buttom
         else:
             imgs = [ImageList.objects.get(id=id) for id in idsDemo]
             sectiondict = {}
@@ -580,7 +602,7 @@ def demo(request):
             # print('finish pred')
             pred_classes = predictions['instances'].pred_classes.cpu().numpy()
             pred_scores = predictions['instances'].scores.cpu().numpy()
-            print(pred_scores,flush=True)
+            print(pred_scores, flush=True)
             # print(predictions,flush=True)
             # try:
             #    pred_boxes = np.asarray(predictions["instances"].pred_boxes.to('cpu'))
@@ -613,21 +635,21 @@ def demo(request):
             resultlist_id = resultlist.id
             # print('writing instances')
 
-
-
-
+            # Iterate through detected instances
             for i in range(len(pred_classes)):
                 # print(class_id[pred_classes[i]])
                 try:
                     bbox = pred_boxes[i].cpu().numpy().tolist() ## BBox of instance
                 except:
                     bbox = [0 ,0, 0, 0]
+
                 segmentation = pred_masks[i]
                 try:
                     segmentation = measure.find_contours(segmentation.T, 0.5)[0].tolist()
                 except:
                     segmentation = []
-                if pred_classes[i] == 1:
+
+                if pred_classes[i] == 1: # 1 means clump
                     height = bbox[3] - bbox[1]
                     width = bbox[2] - bbox[0]
                 elif segmentation == []:
@@ -667,21 +689,9 @@ def demo(request):
                     point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
                     new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
 
-                    # if instance.predicted_class == 'spear' :
-                    #     # print(spear_num,instance.predicted_class,' angle : ',angle,' height : ',height*scale)
-                    #     if height*scale>150 and scale != 0:
-                    #         point_left = (int(centroid[0]-width),int((centroid[1]+height/2)-(100/scale)-(height/4)))
-                    #         point_right = (int(centroid[0]+width),int((centroid[1]+height/2)-(100/scale)+(height/4)))
-                    #         new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-                    #         # cv2.imwrite(str(instance.predicted_class)+'image_crop2'+str(spear_num)+'.jpg', new_image_crop2)
-                    #         # cv2.imwrite(str(instance.predicted_class)+'image_crop1'+str(spear_num)+'.jpg', edges)
-
-                    #     else:
                     point_left = (int(centroid[0]-width),int(centroid[1]-height/4))
                     point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
                     new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-                    # cv2.imwrite(str(instance.predicted_class)+'image_crop2'+str(spear_num)+'.jpg', new_image_crop2)
-                    # cv2.imwrite(str(instance.predicted_class)+'image_crop1'+str(spear_num)+'.jpg', edges)
 
                     try:
                         indices = np.where(new_image_crop2 != [0])
@@ -717,6 +727,7 @@ def demo(request):
 
 
 
+# Adam added, unknown reason
 def updated(request):
     if request.method == 'POST':
         mp.set_start_method("spawn", force=True)

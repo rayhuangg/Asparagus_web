@@ -24,12 +24,14 @@ def index(request):
     now = datetime.datetime.now().astimezone(pytz.timezone('Asia/Taipei'))
 
     sections = Section.objects.all()
+
+    # Adjust the color display in record webpage, based on upload time
     for section in sections:
         try:
             latest_img = ImageList.objects.filter(section__name=section.name).latest()
             timedelta = now - latest_img.date.astimezone(pytz.timezone('Asia/Taipei'))
-            if timedelta.total_seconds() >= 360:
-                level = 'warning'
+            if timedelta.total_seconds() >= 360: # 360 means 6 mins
+                level = 'warning' # warning = orange (probably)
                 if timedelta.total_seconds() >= 3600*24:
                     level = 'danger'
             else:
@@ -38,7 +40,7 @@ def index(request):
             level = 'danger'
         context[section.name] = {'section': section.name, 'imagelist':ImageList.objects.filter(section__name=section.name)[:3]}
         levels[section.name] = level
-    frontview = FrontView.objects.get(id=399)
+    frontview = FrontView.objects.latest('date')
     # return render(request, 'record/record.html', {'context': context, 'frontview': frontview, 'levels': json.dumps(levels)})
     return render(request, 'record/record.html', {'frontview': frontview, 'levels': json.dumps(levels)})
 
@@ -116,6 +118,8 @@ def front(request):
 
     return render(request, 'record/record.html', {'form': form})
 
+
+# Upload data to Dr. Joe-Air Jiang's lab server
 def uploadtosql(location, image, side):
     # try:
     camera_ID = datetime.datetime.now().strftime('%Y%m%d_%H%M%S_')
