@@ -496,7 +496,7 @@ def straw_detection(path):
     test_momo = {k: v for k, v in sorted(test_momo.items(), key=lambda item: item[1], reverse=True)}
     test_momo.pop(0)
     for k, v in test_momo.items():
-        # region larger than 1000
+        # the region larger than 1000
         if v > 1000:
             straw = np.ones((len(sat), len(sat[0]))) * [label_momo == k] *255
             ret, thresh = cv2.threshold(np.float32(straw[0]), 127, 255, 0)
@@ -525,7 +525,7 @@ def straw_detection(path):
     test_blue = {k: v for k, v in sorted(test_blue.items(), key=lambda item: item[1], reverse=True)}
     test_blue.pop(0)
     for k, v in test_blue.items():
-        # region larger than 1000
+        # the region larger than 1000
         if v > 1000:
             straw = np.ones((len(sat), len(sat[0]))) * [label_blue == k] *255
             ret, thresh = cv2.threshold(np.float32(straw[0]), 127, 255, 0)
@@ -544,15 +544,30 @@ def straw_detection(path):
 
 # Function handle the when the record page demo buttom pressed
 def demo(request):
+    """
+    This function handles a POST request and processes the data contained within it.
+
+    POST Request Content:
+    - 'demo': A comma-separated list of image IDs representing the images to be detected.
+    - 'straw': Represents the state of the straw detection button, but is currently not used (Adam).
+    - 'source': Indicates the source of the request, which may be 'scheduled' for automated scheduling.
+
+    Note:
+    - The function parses the 'demo' and 'straw' parameters from the POST request.
+    - Depending on the 'source' parameter, it gathers images differently.
+    - 'demo' specifies the image IDs to be processed.
+    """
+
     if request.method == 'POST':
         mp.set_start_method("spawn", force=True)
         setup_logger(name="fvcore")
-        print('hello, start inference',flush=True)
-        # inputs = get_latest()
-        idsDemo = [int(id) for id in request.POST['demo'].split(',')] # the image id to be detected
+        print('Hello, start inference',flush=True)
+        demo_data = request.POST.get('demo', '')
+        idsDemo = idsDemo = [int(id) for id in demo_data.split(',') if id.strip()] # the image id to be detected
         straw = request.POST['straw'] # Straw detection buttom, current not used.(Adam)
         inputs = []
-        # print(idsDemo)
+        print("The following picture need to inference:", idsDemo)
+
         if request.POST['source'] == 'scheduled':
             now = datetime.datetime.now().astimezone(pytz.timezone('Asia/Taipei'))
             oneDayBefore = now - datetime.timedelta(days=1)
@@ -565,9 +580,10 @@ def demo(request):
             for _, img in sectiondict.items():
                 inputs.append([img.id, img.image.path])
             demo_model = Demo(source='scheduled')
+            demo_model.save()
 
         # manual press demo buttom
-        else:
+        elif request.POST['source'] == 'manual':
             imgs = [ImageList.objects.get(id=id) for id in idsDemo]
             sectiondict = {}
             for img in imgs:
@@ -579,40 +595,43 @@ def demo(request):
                 inputs.append([img.id, img.image.path])
 
             demo_model = Demo(source='manual')
-        # print(img.image.path)
+            demo_model.save()
+
+        # "patrol" means the vehicle is moving in the field,
+        # continuously uploading and detecting images within the same demo ID.
+        elif request.POST['source'] == 'patrol':
+            imgs = [ImageList.objects.get(id=id) for id in idsDemo]
+            sectiondict = {}
+            for img in imgs:
+                if img.section.name not in sectiondict:
+                    sectiondict[img.section.name] = img
+                elif img.date > sectiondict[img.section.name].date:
+                    sectiondict[img.section.name] = img
+            for _, img in sectiondict.items():
+                inputs.append([img.id, img.image.path])
+
+            # Check if there is an existing lasting demo with 'patrol' as the source
+            latest_demo = Demo.objects.order_by('-date').first()
+            if latest_demo and latest_demo.source == 'patrol':
+                demo_model = latest_demo
+            else:
+                # If no existing 'patrol' demo, create a new one
+                demo_model = Demo.objects.create(source="patrol")
+                demo_model.save()
+
+
         cfg = setup_cfg()
-
-
         demo = VisualizationDemo(cfg)
-
         class_id = {1: 'clump', 2: 'stalk' , 3: 'spear', 4: 'bar', 5:'straw'}
-
-        demo_model.save()
         demo_id = demo_model.id
-        # print(demo_model,flush=True)
-        with open('monitor/progress.txt', 'w') as progress:
-            progress.writelines('0 0')
-        pro = 0
+
         for image_id, path in tqdm.tqdm(inputs):
-            # print('start')
             img = read_image(path, format="BGR")
-            start_time = time.time()
-            # print(image_id,flush=True)
             predictions, visualized_output = demo.run_on_image(img)
-            # print('finish pred')
             pred_classes = predictions['instances'].pred_classes.cpu().numpy()
             pred_scores = predictions['instances'].scores.cpu().numpy()
             print(pred_scores, flush=True)
-            # print(predictions,flush=True)
-            # try:
-            #    pred_boxes = np.asarray(predictions["instances"].pred_boxes.to('cpu'))
-            # except:
-            #    pass
             pred_boxes = np.asarray(predictions["instances"].pred_boxes)
-            # try:
-            #    pred_masks = np.asarray(predictions["instances"].pred_masks.to('cpu'))
-            # except:
-            #    pass
             pred_masks = predictions["instances"].pred_masks.cpu().numpy()
             pred_all = []
             for i in range(len(pred_classes)):
@@ -629,15 +648,11 @@ def demo(request):
                 pred_boxes.append(pred_all[i][2])
                 pred_masks.append(pred_all[i][3])
 
-            # print('start resultlist')
             resultlist = ResultList(image_id=image_id, demo_id=demo_id)
             resultlist.save()
             resultlist_id = resultlist.id
-            # print('writing instances')
 
-            # Iterate through detected instances
             for i in range(len(pred_classes)):
-                # print(class_id[pred_classes[i]])
                 try:
                     bbox = pred_boxes[i].cpu().numpy().tolist() ## BBox of instance
                 except:
@@ -720,9 +735,6 @@ def demo(request):
             #         instance = Instance(predicted_class='straw', score=1, mask=straw_box.tolist(), width=straw_width, resultlist_id=resultlist_id)
             #         instance.save()
 
-            pro += 1
-            with open('monitor/progress.txt', 'w') as progress:
-                progress.writelines(str(pro)+' '+str(len(inputs)))
     return HttpResponse('Success')
 
 
