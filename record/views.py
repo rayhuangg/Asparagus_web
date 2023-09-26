@@ -75,13 +75,7 @@ def side(request):
     form = ImageListForm()
     if request.method == 'POST':
         form = ImageListForm(request.POST, request.FILES)
-        if request.POST['section'][0] == 'A' or request.POST['section'][0] == 'D':
-            side = 'right'
-        else:
-            side = 'left'
-        # form.save()
         if form.is_valid():
-
             section = Section.objects.get(name=request.POST['section'])
             image = request.FILES['image']
             try:
