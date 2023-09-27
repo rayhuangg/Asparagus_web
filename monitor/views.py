@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.template.response import TemplateResponse
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 import sys
 from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
@@ -23,6 +24,7 @@ import base64
 import json
 import numpy as np
 from PIL import Image
+from datetime import timedelta
 from skimage.draw import polygon2mask
 from skimage import measure, morphology
 from skimage.morphology import skeletonize
@@ -612,8 +614,16 @@ def demo(request):
 
             # Check if there is an existing lasting demo with 'patrol' as the source
             latest_demo = Demo.objects.order_by('-date').first()
-            if latest_demo and latest_demo.source == 'patrol':
-                demo_model = latest_demo
+            if latest_demo:
+                # calculate the time between now and lastest patrol demo
+                current_time = timezone.now() # django time object
+                time_difference = current_time - latest_demo.date
+                if latest_demo.source == 'patrol' and time_difference < timedelta(minutes=5):
+                    demo_model = latest_demo
+                else:
+                    # if not, create a new demo object
+                    demo_model = Demo.objects.create(source="patrol")
+                    demo_model.save()
             else:
                 # If no existing 'patrol' demo, create a new one
                 demo_model = Demo.objects.create(source="patrol")

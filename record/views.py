@@ -2,6 +2,8 @@ from django.shortcuts import render, reverse, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, HttpResponseRedirect
 from django.utils.timezone import get_current_timezone
+
+import requests
 from .models import Section, ImageList, FrontView
 from .forms import ImageListForm, FrontViewForm
 import sys
@@ -84,8 +86,24 @@ def side(request):
                 name = datetime.datetime.now().astimezone(pytz.timezone('Asia/Taipei')).strftime('%Y%m%d_%H%M%S')
             ImageList(section=section, name=name, image=image).save()
 
-            image = ImageList.objects.latest().image.path
+            latest_id = ImageList.objects.latest().id
 
+            try:
+                if request.POST["detection"]:
+                    print("Receive detection commend, do the patrol detection")
+                    post_data = {
+                        "demo": latest_id,
+                        "straw": "false",
+                        "source": "patrol"
+                    }
+                    response = requests.post("http://140.112.183.138:3000/monitor/demo/", data=post_data)
+                    if response.status_code == 200:
+                        print("Successully demo!")
+                    else:
+                        print("fail demo!")
+            except Exception as e:
+                import traceback
+                traceback.print_exc()
 
             # upload to Joe's lab
             # uploadtosql(request.POST['section'], image, side)
