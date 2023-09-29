@@ -544,30 +544,58 @@ def straw_detection(path):
             widths.append(width)
     return boxes, widths
 
-# Function handle the when the record page demo buttom pressed
+# Function to handle POST requests when the "demo" button is pressed on the record page.
+# Or trigger by the patrol_image_Instant_detect_toggle checkbox
 def demo(request):
     """
-    This function handles a POST request and processes the data contained within it.
+    This function processes a POST request and handles the data contained within it.
 
     POST Request Content:
-    - 'demo': A comma-separated list of image IDs representing the images to be detected.
-    - 'straw': Represents the state of the straw detection button, but is currently not used (Adam).
-    - 'source': Indicates the source of the request, which may be 'scheduled' for automated scheduling.
+    - 'demo_img_id': A comma-separated list of image IDs representing the images to be detected.
+                     If None or "foo," the program will use the 'demo_img_name' to perform detection.
+    - 'demo_img_name': A comma-separated list of image names to be used for detection.
+    - 'source': Indicates the source of the request, which may be 'scheduled,' 'manual,' or 'patrol.'
+                - 'scheduled': Used when detection is needed for data collected throughout the day.
+                - 'manual': Enables manual selection of images for detection.
+                - 'patrol': Used during robot patrols in the field, where prediction results are saved in a single demo instance.
 
     Note:
-    - The function parses the 'demo' and 'straw' parameters from the POST request.
+    - The function initializes multiprocessing and sets up logging.
+    - It retrieves 'demo_img_id' and 'demo_img_name' parameters from the POST request.
     - Depending on the 'source' parameter, it gathers images differently.
-    - 'demo' specifies the image IDs to be processed.
+    - For 'scheduled' source, it collects images taken within the last day.
+    - For 'manual' source, it collects images specified by 'demo_img_id.'
+    - For 'patrol' source, it collects images specified by 'demo_img_id' and manages ongoing patrol sessions.
+    - The function performs instance segmentation and stores the results in the database.
+
+    Returns:
+    - HttpResponse: A success message indicating the completion of the processing.
     """
 
     if request.method == 'POST':
         mp.set_start_method("spawn", force=True)
         setup_logger(name="fvcore")
         print('Hello, start inference',flush=True)
-        demo_data = request.POST.get('demo', '')
-        idsDemo = idsDemo = [int(id) for id in demo_data.split(',') if id.strip()] # the image id to be detected
-        straw = request.POST['straw'] # Straw detection buttom, current not used.(Adam)
+        demo_img_id = request.POST.get('demo_img_id', '')
+        demo_img_name = request.POST.get('demo_img_name', '')
+        try:
+            idsDemo = []  # List to store image IDs to be processed
+
+            # If the 'demo_img_id' parameter is not empty and not equal to "foo"
+            if demo_img_id and demo_img_id != "foo":
+                idsDemo = [int(id.strip()) for id in demo_img_id.split(',') if id.strip()]  # the image id to be detected
+
+        except ValueError:
+            idsDemo = []
+
+        if demo_img_name and demo_img_name != "foo":
+            name_list = [name.strip() for name in demo_img_name.split(',')]
+            images_with_name = ImageList.objects.filter(name__in=name_list)
+            idsDemo += [img.id for img in images_with_name]
+        # straw = request.POST['straw'] # Straw detection buttom, current not used.(Adam)
         inputs = []
+
+
         print("The following picture need to inference:", idsDemo)
 
         if request.POST['source'] == 'scheduled':

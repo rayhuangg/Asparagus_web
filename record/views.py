@@ -1,8 +1,9 @@
+import threading
 from django.shortcuts import render, reverse, redirect
 from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponse, HttpResponseRedirect
-from django.utils.timezone import get_current_timezone
 
+import queue
 import requests
 from .models import Section, ImageList, FrontView
 from .forms import ImageListForm, FrontViewForm
@@ -15,8 +16,23 @@ import datetime
 import json
 import ftplib
 import pytz
+import time
 
-# Create your views here.
+
+# Create a global queue to store the IDs of photos that need detection.
+detection_queue = queue.Queue()
+
+# Define a global variable to store thread objects.
+detection_thread = None
+
+# Define a lock object to protect thread start and stop operations.
+thread_lock = threading.Lock()
+
+# Define an exit flag to control thread termination.
+exit_thread = False
+
+# Create a global variable to indicate whether scheduled detection is enabled.
+enable_detection = False
 
 @csrf_exempt
 def index(request):
@@ -88,25 +104,10 @@ def side(request):
 
             latest_id = ImageList.objects.latest().id
 
-            try:
-                if request.POST["detection"]:
-                    print("Receive detection commend, do the patrol detection")
-                    post_data = {
-                        "demo": latest_id,
-                        "straw": "false",
-                        "source": "patrol"
-                    }
-                    response = requests.post("http://140.112.183.138:3000/monitor/demo/", data=post_data)
-                    if response.status_code == 200:
-                        print("Successully demo!")
-                    else:
-                        print("fail demo!")
-            except Exception as e:
-                import traceback
-                traceback.print_exc()
-
-            # upload to Joe's lab
-            # uploadtosql(request.POST['section'], image, side)
+            if request.POST.get("detection") == "True":
+                print("Receive detection commend, starting the patrol detection task.")
+                detection_queue.put(latest_id)
+                print("Patrol detection task started. ")
 
         else:
             print(form.errors)
@@ -164,3 +165,62 @@ def showdemoRange(request):
         for image in imageset:
             data.append({'url': image.image.url, 'date': image.date.astimezone(pytz.timezone('Asia/Taipei')).strftime('%Y.%m.%d %H:%M:%S'), 'id': image.id, 'section': image.section.name})
         return HttpResponse(json.dumps({'data': data}))
+
+
+# View function to control the enabling of scheduled detection.
+def toggle_detection(request):
+    global enable_detection
+    global detection_thread
+    global exit_thread
+
+    status = request.POST['status']
+
+    if status == "start":
+        enable_detection = True
+        # Start a thread only if it doesn't exist or has already finished.
+        with thread_lock:
+            if detection_thread is None or not detection_thread.is_alive():
+                exit_thread = False # Reset the exit flag.
+                detection_thread = threading.Thread(target=perform_detection)
+                detection_thread.start()
+        print("Start regular execution of identification")
+    elif status == "stop":
+        enable_detection = False
+        # Stop the thread only if it exists and is running.
+        with thread_lock:
+            if detection_thread is not None and detection_thread.is_alive():
+                exit_thread = True
+                detection_thread.join()  # Wait for the thread to finish.
+                detection_thread = None  # Clear the thread object.
+        print("Stop regular execution of identification, kill session")
+
+    return HttpResponse('Success')
+
+def perform_detection():
+    global enable_detection
+    global exit_thread
+
+    print("receive toggle trigger")
+
+    while not exit_thread:
+        if enable_detection:
+            # Process tasks in the queue.
+            while not detection_queue.empty():
+                image_id = detection_queue.get()
+                print(f"{image_id = }")
+
+                post_data = {
+                    "demo_img_id": image_id,
+                    "straw": "false",
+                    "source": "patrol",
+                }
+                response = requests.post("http://140.112.183.138:3000/monitor/demo/", data=post_data)
+                if response.status_code == 200:
+                    print("Successfully demo!")
+                else:
+                    print("Fail demo!")
+
+
+            print("***** Queue is empty")
+
+        time.sleep(5)  # Check the queue every 5 seconds.

@@ -10,4 +10,5 @@ urlpatterns = [
     path('demoProgress', views.demoProgress),
     path('showdemoRange', views.showdemoRange),
     path('preview', views.preview),
+    path('toggleDetection', views.toggle_detection)
 ]
