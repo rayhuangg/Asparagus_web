@@ -640,6 +640,7 @@ def demo(request):
             for _, img in sectiondict.items():
                 inputs.append([img.id, img.image.path])
 
+            # FIXME: change to use the photo upload time
             # Check if there is an existing lasting demo with 'patrol' as the source
             latest_demo = Demo.objects.order_by('-date').first()
             if latest_demo:
