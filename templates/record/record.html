@@ -45,17 +45,17 @@
     </div>
 
     <div class="row align-items-center" style="height: auto;">
-        <!-- <div class="col">
-            <button class="btn btn-danger btn-lg" id="demo" onclick="Demo()" style="margin: 1em">
-                <span class="spinner-border" id="demoSpan" role="status" aria-hidden="true" style="margin: 0em 1em 0em 0em; display: none"></span>
-                <span id="demoWord" style="font-size: 2rem;">Demo</span>
-            </button>
-        </div> -->
         <div class="col">
             <button class="btn btn-danger btn-lg" id="demo" style="margin: 1em" data-bs-toggle="collapse" data-bs-target="#collapseDemo" aria-expanded="false" aria-controls="collapseDemo">
-            Demo
+                Demo
             </button>
-        </div>
+            <div class="d-flex justify-content-center">
+                <div class="form-check form-switch">
+                    <input class="patrol-detect-input" type="checkbox" id="patrol_image_Instant_detect_toggle">
+                    <label class="patrol-detect-label" for="patrol_image_Instant_detect_toggle">Partol image instant detect</label>
+                </div>
+            </div>
+    </div>
 
     </div>
     <div class="row">
@@ -290,22 +290,37 @@
     })
 
 
-    // function Demo() {
-    //     document.getElementById('demoSpan').style.display = '';
-    //     document.getElementById('demoWord').innerText = 'Identifying...';
-    //     $.ajax({
-    //         url:'../monitor/demo/',
-    //         type: 'POST',
-    //         data: {
-    //             demo: true,
-    //         },
-    //         success: function() {
-    //             document.getElementById('demoSpan').style.display = '';
-    //             document.getElementById('demo').innerText = 'Demo';
-    //         },
 
-    //     });
-    // };
+    $(document).ready(function() {
+    // Save the initial state of the toggle switch.
+        var previousState = $("#patrol_image_Instant_detect_toggle").prop("checked");
+
+        $("#patrol_image_Instant_detect_toggle").change(function() {
+        // Get the current state of the switch.
+            var currentState = $(this).prop("checked");
+
+            // Send a POST request only when the switch state changes.
+            if (currentState !== previousState) {
+                var url = "http://140.112.183.138:3000/record/toggleDetection";
+                var status = currentState ? "start" : "stop";
+
+                $.ajax({
+                    type: "POST",
+                    url: url,
+                    data: { status: status },
+                    success: function() {
+                        console.log(JSON.stringify({ status: status }) + "POST请求成功");
+                        previousState = currentState; // Update the previous state
+                    },
+                    error: function() {
+                        console.error("POST请求失败");
+                        // Restore the switch to the previous state
+                        $("#patrol_image_Instant_detect_toggle").prop("checked", previousState);
+                    }
+                });
+            }
+        });
+    });
 
     function Demo() {
         // document.getElementById('demoGO').innerHTML = 'Identifying...';
@@ -318,8 +333,7 @@
             url:'../monitor/demo/',
             type: 'POST',
             data: {
-                demo: idsDemo,
-                straw: strawDetection,
+                demo_img_id: idsDemo,
                 source: 'manual'
             },
             success: function() {

@@ -7,7 +7,7 @@ urlpatterns = [
     path('sendDemoId', views.checkDemoId),
     path('sendRange', views.checkRange),
     path('demo/', views.demo),
-    path('downloadjson/<int:id>/', views.downloadJSON),
-    path('downloadexcel/<int:total_id>/',views.downloadexcel),
-    path('updated/', views.updated)
+    path('downloadjson/<int:id>/', views.downloadJSON), # Adam added
+    path('downloadexcel/<int:total_id>/',views.downloadexcel), # Adam added
+    path('updated/', views.updated) # Adam added, unknow usage.
 ]

@@ -7,6 +7,7 @@ __pycache__/
 *.MOV
 *.pth
 *.pkl
+*.http
 **/migrations
 detectron/config/**
 detectron/dataset/**
@@ -19,3 +20,4 @@ routine.*
 sqltest.py
 area.py
 sql_chiang.py
+monitor/progress*

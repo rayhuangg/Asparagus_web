@@ -32,3 +32,25 @@ Show the Lidar scanning in real-time. Robot vehicle is required.
 
 ## Admin
 Admin page for accessing the database.
+
+
+<details>
+<summary>Folder/ File explain</summary>
+
+```
+api                    // 提供佐翼查詢section最新辨識結果功能
+asparagus              // 主要設定目錄，內有setting.py，原本專案應是較做asparagus，而非目前django_asparagus
+css                    //
+detectron              // detectron2運行model使用
+home                   //
+lidar                  //
+monitor                //
+record                 //
+static                 //
+stats                  //
+templates              //
+db.sqlite3             //
+manage.py              //
+routine.py             // 每天定時執行demo predict
+```
+</details>

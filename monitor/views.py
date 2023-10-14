@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.template.response import TemplateResponse
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
 import sys
 from os import path
 sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
@@ -23,6 +24,7 @@ import base64
 import json
 import numpy as np
 from PIL import Image
+from datetime import timedelta
 from skimage.draw import polygon2mask
 from skimage import measure, morphology
 from skimage.morphology import skeletonize
@@ -366,17 +368,36 @@ def downloadexcel(request,total_id):
 
 
 def closest_scale(scales, instance):
-    c_instance = [ (instance.bbox_xmax + instance.bbox_xmin)/2, (instance.bbox_ymax + instance.bbox_ymin)/2]
-    max_dist = np.inf
-    max_scale = 0
+    """
+    This function finds the closest scale to a given instance among a list of scales.
+
+    Parameters:
+        scales (list): A list containing multiple scale.
+        instance (dict): A dictionary containing information about the target instance.
+
+    Returns:
+        dict: The scale from the 'scales' list that is closest to the target instance based on centroid proximity.
+
+    """
+    # Calculate the centroid of the target instance
+    instance_center = [(instance.bbox_xmax + instance.bbox_xmin)/2, (instance.bbox_ymax + instance.bbox_ymin)/2]
+    min_dist = np.inf
+    closest_scale = 0
+
+    # Iterate through each scale and find the closest one to the  instance
     for scale in scales:
         mask_scale = np.array(scale.mask)
-        c_scale = [np.mean(mask_scale[:, 0]), np.mean(mask_scale[:, 1])]
-        dist = (c_instance[0]-c_scale[0])**2 + (c_instance[1]-c_scale[1])**2
-        if dist < max_dist:
-            max_dist = dist
-            max_scale = scale
-    return max_scale
+        scale_center = [np.mean(mask_scale[:, 0]), np.mean(mask_scale[:, 1])]
+
+        # Calculate the squared distance between the centroids
+        dist = (instance_center[0]-scale_center[0])**2 + (instance_center[1]-scale_center[1])**2
+
+        # Update the closest scale if the current scale is closer
+        if dist < min_dist:
+            min_dist = dist
+            closest_scale = scale
+
+    return closest_scale
 
 
 def checkDemoId(request):
@@ -477,7 +498,7 @@ def straw_detection(path):
     test_momo = {k: v for k, v in sorted(test_momo.items(), key=lambda item: item[1], reverse=True)}
     test_momo.pop(0)
     for k, v in test_momo.items():
-        # region larger than 1000
+        # the region larger than 1000
         if v > 1000:
             straw = np.ones((len(sat), len(sat[0]))) * [label_momo == k] *255
             ret, thresh = cv2.threshold(np.float32(straw[0]), 127, 255, 0)
@@ -506,7 +527,7 @@ def straw_detection(path):
     test_blue = {k: v for k, v in sorted(test_blue.items(), key=lambda item: item[1], reverse=True)}
     test_blue.pop(0)
     for k, v in test_blue.items():
-        # region larger than 1000
+        # the region larger than 1000
         if v > 1000:
             straw = np.ones((len(sat), len(sat[0]))) * [label_blue == k] *255
             ret, thresh = cv2.threshold(np.float32(straw[0]), 127, 255, 0)
@@ -523,16 +544,60 @@ def straw_detection(path):
             widths.append(width)
     return boxes, widths
 
+# Function to handle POST requests when the "demo" button is pressed on the record page.
+# Or trigger by the patrol_image_Instant_detect_toggle checkbox
 def demo(request):
+    """
+    This function processes a POST request and handles the data contained within it.
+
+    POST Request Content:
+    - 'demo_img_id': A comma-separated list of image IDs representing the images to be detected.
+                     If None or "foo," the program will use the 'demo_img_name' to perform detection.
+    - 'demo_img_name': A comma-separated list of image names to be used for detection.
+    - 'source': Indicates the source of the request, which may be 'scheduled,' 'manual,' or 'patrol.'
+                - 'scheduled': Used when detection is needed for data collected throughout the day.
+                - 'manual': Enables manual selection of images for detection.
+                - 'patrol': Used during robot patrols in the field, where prediction results are saved in a single demo instance.
+
+    Note:
+    - The function initializes multiprocessing and sets up logging.
+    - It retrieves 'demo_img_id' and 'demo_img_name' parameters from the POST request.
+    - Depending on the 'source' parameter, it gathers images differently.
+    - For 'scheduled' source, it collects images taken within the last day.
+    - For 'manual' source, it collects images specified by 'demo_img_id.'
+    - For 'patrol' source, it collects images specified by 'demo_img_id' and manages ongoing patrol sessions.
+    - The function performs instance segmentation and stores the results in the database.
+
+    Returns:
+    - HttpResponse: A success message indicating the completion of the processing.
+    """
+
     if request.method == 'POST':
         mp.set_start_method("spawn", force=True)
         setup_logger(name="fvcore")
-        print('hello',flush=True)
-        # inputs = get_latest()
-        idsDemo = [ int(id) for id in request.POST['demo'].split(',')]
-        straw = request.POST['straw']
+        print('Hello, start inference',flush=True)
+        demo_img_id = request.POST.get('demo_img_id', '')
+        demo_img_name = request.POST.get('demo_img_name', '')
+        try:
+            idsDemo = []  # List to store image IDs to be processed
+
+            # If the 'demo_img_id' parameter is not empty and not equal to "foo"
+            if demo_img_id and demo_img_id != "foo":
+                idsDemo = [int(id.strip()) for id in demo_img_id.split(',') if id.strip()]  # the image id to be detected
+
+        except ValueError:
+            idsDemo = []
+
+        if demo_img_name and demo_img_name != "foo":
+            name_list = [name.strip() for name in demo_img_name.split(',')]
+            images_with_name = ImageList.objects.filter(name__in=name_list)
+            idsDemo += [img.id for img in images_with_name]
+        # straw = request.POST['straw'] # Straw detection buttom, current not used.(Adam)
         inputs = []
-        # print(idsDemo)
+
+
+        print("The following picture need to inference:", idsDemo)
+
         if request.POST['source'] == 'scheduled':
             now = datetime.datetime.now().astimezone(pytz.timezone('Asia/Taipei'))
             oneDayBefore = now - datetime.timedelta(days=1)
@@ -545,7 +610,10 @@ def demo(request):
             for _, img in sectiondict.items():
                 inputs.append([img.id, img.image.path])
             demo_model = Demo(source='scheduled')
-        else:
+            demo_model.save()
+
+        # manual press demo buttom
+        elif request.POST['source'] == 'manual':
             imgs = [ImageList.objects.get(id=id) for id in idsDemo]
             sectiondict = {}
             for img in imgs:
@@ -557,40 +625,52 @@ def demo(request):
                 inputs.append([img.id, img.image.path])
 
             demo_model = Demo(source='manual')
-        # print(img.image.path)
+            demo_model.save()
+
+        # "patrol" means the vehicle is moving in the field,
+        # continuously uploading and detecting images within the same demo ID.
+        elif request.POST['source'] == 'patrol':
+            imgs = [ImageList.objects.get(id=id) for id in idsDemo]
+            sectiondict = {}
+            for img in imgs:
+                if img.section.name not in sectiondict:
+                    sectiondict[img.section.name] = img
+                elif img.date > sectiondict[img.section.name].date:
+                    sectiondict[img.section.name] = img
+            for _, img in sectiondict.items():
+                inputs.append([img.id, img.image.path])
+
+            # FIXME: change to use the photo upload time
+            # Check if there is an existing lasting demo with 'patrol' as the source
+            latest_demo = Demo.objects.order_by('-date').first()
+            if latest_demo:
+                # calculate the time between now and lastest patrol demo
+                current_time = timezone.now() # django time object
+                time_difference = current_time - latest_demo.date
+                if latest_demo.source == 'patrol' and time_difference < timedelta(minutes=5):
+                    demo_model = latest_demo
+                else:
+                    # if not, create a new demo object
+                    demo_model = Demo.objects.create(source="patrol")
+                    demo_model.save()
+            else:
+                # If no existing 'patrol' demo, create a new one
+                demo_model = Demo.objects.create(source="patrol")
+                demo_model.save()
+
+
         cfg = setup_cfg()
-
-
         demo = VisualizationDemo(cfg)
-
         class_id = {1: 'clump', 2: 'stalk' , 3: 'spear', 4: 'bar', 5:'straw'}
-
-        demo_model.save()
         demo_id = demo_model.id
-        # print(demo_model,flush=True)
-        with open('monitor/progress.txt', 'w') as progress:
-            progress.writelines('0 0')
-        pro = 0
+
         for image_id, path in tqdm.tqdm(inputs):
-            # print('start')
             img = read_image(path, format="BGR")
-            start_time = time.time()
-            # print(image_id,flush=True)
             predictions, visualized_output = demo.run_on_image(img)
-            # print('finish pred')
             pred_classes = predictions['instances'].pred_classes.cpu().numpy()
             pred_scores = predictions['instances'].scores.cpu().numpy()
-            print(pred_scores,flush=True)
-            # print(predictions,flush=True)
-            # try:
-            #    pred_boxes = np.asarray(predictions["instances"].pred_boxes.to('cpu'))
-            # except:
-            #    pass
+            print(pred_scores, flush=True)
             pred_boxes = np.asarray(predictions["instances"].pred_boxes)
-            # try:
-            #    pred_masks = np.asarray(predictions["instances"].pred_masks.to('cpu'))
-            # except:
-            #    pass
             pred_masks = predictions["instances"].pred_masks.cpu().numpy()
             pred_all = []
             for i in range(len(pred_classes)):
@@ -607,27 +687,23 @@ def demo(request):
                 pred_boxes.append(pred_all[i][2])
                 pred_masks.append(pred_all[i][3])
 
-            # print('start resultlist')
             resultlist = ResultList(image_id=image_id, demo_id=demo_id)
             resultlist.save()
             resultlist_id = resultlist.id
-            # print('writing instances')
-
-
-
 
             for i in range(len(pred_classes)):
-                # print(class_id[pred_classes[i]])
                 try:
                     bbox = pred_boxes[i].cpu().numpy().tolist() ## BBox of instance
                 except:
                     bbox = [0 ,0, 0, 0]
+
                 segmentation = pred_masks[i]
                 try:
                     segmentation = measure.find_contours(segmentation.T, 0.5)[0].tolist()
                 except:
                     segmentation = []
-                if pred_classes[i] == 1:
+
+                if pred_classes[i] == 1: # 1 means clump
                     height = bbox[3] - bbox[1]
                     width = bbox[2] - bbox[0]
                 elif segmentation == []:
@@ -667,21 +743,9 @@ def demo(request):
                     point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
                     new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
 
-                    # if instance.predicted_class == 'spear' :
-                    #     # print(spear_num,instance.predicted_class,' angle : ',angle,' height : ',height*scale)
-                    #     if height*scale>150 and scale != 0:
-                    #         point_left = (int(centroid[0]-width),int((centroid[1]+height/2)-(100/scale)-(height/4)))
-                    #         point_right = (int(centroid[0]+width),int((centroid[1]+height/2)-(100/scale)+(height/4)))
-                    #         new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-                    #         # cv2.imwrite(str(instance.predicted_class)+'image_crop2'+str(spear_num)+'.jpg', new_image_crop2)
-                    #         # cv2.imwrite(str(instance.predicted_class)+'image_crop1'+str(spear_num)+'.jpg', edges)
-
-                    #     else:
                     point_left = (int(centroid[0]-width),int(centroid[1]-height/4))
                     point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
                     new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-                    # cv2.imwrite(str(instance.predicted_class)+'image_crop2'+str(spear_num)+'.jpg', new_image_crop2)
-                    # cv2.imwrite(str(instance.predicted_class)+'image_crop1'+str(spear_num)+'.jpg', edges)
 
                     try:
                         indices = np.where(new_image_crop2 != [0])
@@ -710,13 +774,11 @@ def demo(request):
             #         instance = Instance(predicted_class='straw', score=1, mask=straw_box.tolist(), width=straw_width, resultlist_id=resultlist_id)
             #         instance.save()
 
-            pro += 1
-            with open('monitor/progress.txt', 'w') as progress:
-                progress.writelines(str(pro)+' '+str(len(inputs)))
     return HttpResponse('Success')
 
 
 
+# Adam added, unknown reason
 def updated(request):
     if request.method == 'POST':
         mp.set_start_method("spawn", force=True)
