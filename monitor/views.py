@@ -635,25 +635,29 @@ def demo(request):
             for img in imgs:
                 if img.section.name not in sectiondict:
                     sectiondict[img.section.name] = img
-                elif img.date > sectiondict[img.section.name].date:
+                elif img.date > sectiondict[img.section.naㄅme].date:
                     sectiondict[img.section.name] = img
             for _, img in sectiondict.items():
                 inputs.append([img.id, img.image.path])
 
             # Check if there is an existing lasting demo with 'patrol' as the source
-            latest_demo = Demo.objects.order_by('-date').first()
-            if latest_demo:
+            latest_patrol_demo = Demo.objects.filter(source="patrol").first()
+            if latest_patrol_demo:
+                latest_patrol_demo_predict_time = ResultList.objects.filter(demo=latest_patrol_demo.id).first().date
+
                 # calculate the time between now and lastest patrol demo
                 current_time = timezone.now() # django time object
-                time_difference = current_time - latest_demo.date
-                if latest_demo.source == 'patrol' and time_difference < timedelta(minutes=5):
-                    demo_model = latest_demo
+                time_difference = current_time - latest_patrol_demo_predict_time
+                # TODO: 記得取消註解
+                # if time_difference < timedelta(minutes=5):
+                if time_difference < timedelta(seconds=20): # test used
+                    demo_model = latest_patrol_demo
                 else:
-                    # if not, create a new demo object
+                    # if timedelta not in spcify delta, create a new demo object
                     demo_model = Demo.objects.create(source="patrol")
                     demo_model.save()
             else:
-                # If no existing 'patrol' demo, create a new one
+                # If no existing any 'patrol' demo, create a new one
                 demo_model = Demo.objects.create(source="patrol")
                 demo_model.save()
 
