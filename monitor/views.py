@@ -38,7 +38,12 @@ from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
 from skimage import measure, morphology,feature
-from detectron.demo.predictor import VisualizationDemo
+from detectron.demo.predictor import VisualizationDemo as VisualizationDemo_mrcnn
+
+from detectron2.projects.deeplab import add_deeplab_config
+from maskDINO_asparagus.maskdino import add_maskdino_config
+from maskDINO_asparagus.demo.predictor import VisualizationDemo as VisualizationDemo_mdino
+from maskDINO_asparagus.register_dataset import register_my_dataset
 
 # Create your views here.
 @csrf_exempt
@@ -463,15 +468,17 @@ def get_latest():
     return url_set
 
 def setup_cfg():
-    # load config from file and command-line arguments
     cfg = get_cfg()
-    cfg.merge_from_file("detectron/output/model_straw.yaml")
-    # cfg.merge_from_list(args.opts)
-    # Set score_threshold for builtin models
-    cfg.MODEL.WEIGHTS = "detectron/output/model_straw.pth"
-    cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-    cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = 0.5
+    add_maskdino_config(cfg)
+    add_deeplab_config(cfg)
+
+    # Justin Mask RCNN
+    # cfg.merge_from_file("detectron/output/model_straw.yaml")
+    # cfg.MODEL.WEIGHTS = "detectron/output/model_straw.pth"
+
+    # Ray Huang Mask DINO
+    cfg.merge_from_file("maskDINO_asparagus/output/20230812_110004_R50_normal_retrain_on_straw/config.yaml")
+    cfg.MODEL.WEIGHTS = "maskDINO_asparagus/output/20230812_110004_R50_normal_retrain_on_straw/model_final.pth"
     cfg.freeze()
     return cfg
 
@@ -648,9 +655,7 @@ def demo(request):
                 # calculate the time between now and lastest patrol demo
                 current_time = timezone.now() # django time object
                 time_difference = current_time - latest_patrol_demo_predict_time
-                # TODO: 記得取消註解
-                # if time_difference < timedelta(minutes=5):
-                if time_difference < timedelta(seconds=20): # test used
+                if time_difference < timedelta(minutes=10):
                     demo_model = latest_patrol_demo
                 else:
                     # if timedelta not in spcify delta, create a new demo object
@@ -663,9 +668,12 @@ def demo(request):
 
 
         cfg = setup_cfg()
-        demo = VisualizationDemo(cfg)
-        class_id = {1: 'clump', 2: 'stalk' , 3: 'spear', 4: 'bar', 5:'straw'}
+        # demo = VisualizationDemo_mrcnn(cfg)
+        demo = VisualizationDemo_mdino(cfg)
+        class_id_mrcnn = {1: 'clump', 2: 'stalk', 3: 'spear', 4: 'bar', 5:'straw'} # unknown reason begin from 1
+        class_id_mdino = {0: 'stalk', 1: 'spear', 2: 'bar', 3: 'straw'}
         demo_id = demo_model.id
+        print(f"{demo_id = }")
 
         for image_id, path in tqdm.tqdm(inputs):
             img = read_image(path, format="BGR")
@@ -706,7 +714,7 @@ def demo(request):
                 except:
                     segmentation = []
 
-                if pred_classes[i] == 1: # 1 means clump
+                if pred_classes[i] == 1: # before 1 means clump, now useless
                     height = bbox[3] - bbox[1]
                     width = bbox[2] - bbox[0]
                 elif segmentation == []:
@@ -766,7 +774,7 @@ def demo(request):
                     height = int(np.sum(skeleton))
 
 
-                instance = Instance(predicted_class=class_id[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=resultlist_id)
+                instance = Instance(predicted_class=class_id_mdino[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=resultlist_id)
                 instance.save()
             # straw detection
             # if straw == 'true':
