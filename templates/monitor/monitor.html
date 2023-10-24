@@ -49,6 +49,7 @@
                 <p id="clump">Clump</p>
                 <p id="stalk">Stalk</p>
                 <p id="spear">Spear</p>
+                <p id="density">Density</p>
                 <div class="row">
                     <div class="col" style="padding-right: 0;">
                         <a class="btn btn-primary" id="downloadimage" href="" target="_blank">Download image</a>
@@ -256,7 +257,7 @@
                     svg.setAttribute('width', img.clientWidth);
                     svg.setAttribute('height', img.clientHeight);
                     svg.style.position = 'absolute';
-                    var clump=0, stalk=0, spear=0;
+                    var clump=0, stalk=0, spear=0, density;
 
                     for (var i = 0; i < context['instance'].length; i++){
                         if (context['instance'][i]['class'] == 'clump'){
@@ -293,12 +294,20 @@
                         obj.setAttribute('id', 'svg'+i.toString());
                         svg.append(obj);
                     }
+                    if (stalk > 25) {
+                        density = "high";
+                    } else if (stalk >= 15) {
+                        density = "medium";
+                    } else {
+                        density = "low";
+                    }
                     document.getElementById('totalToast-title').innerText = context['section'];
                     document.getElementById('instanceId').innerHTML = 'ID: '+context['id'].toString();
                     document.getElementById('date').innerHTML = 'Date: ' + context['date']
                     document.getElementById('clump').innerHTML = 'Clump: '+clump.toString();
                     document.getElementById('stalk').innerHTML = 'Stalk: '+stalk.toString();
                     document.getElementById('spear').innerHTML = 'Spear: '+spear.toString();
+                    document.getElementById('density').innerHTML = 'Density: '+density.toString();
                     document.getElementById('downloadimage').href = context['image']
                     document.getElementById('downloadjson').setAttribute('data-imageid', context['id'])
                     var total_id = document.getElementById('inputGroup1').value

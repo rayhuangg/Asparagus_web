@@ -125,6 +125,7 @@ def index(request):
                                             })
 
         return HttpResponse(json.dumps(context))
+
     demos = [d for d in Demo.objects.all()] # {{ demolist.name }} form
     demo_range = [ [d.id, d.name] for d in Demo.objects.all()]
     sections = [ s for s in Section.objects.all()]
