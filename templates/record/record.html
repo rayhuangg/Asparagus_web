@@ -188,8 +188,8 @@
         var rowDiv = document.createElement('div');
         rowDiv.className = 'row align-items-center';
         rowDiv.id = 'section';
-        for (var j = 0; j < 8 ; j++){
-            var colList = ['', 'A', 'B', 'C', 'D', 'E', 'F'];
+        for (var j = 0; j <10 ; j++){
+            var colList = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
             var colDiv = document.createElement('div');
             colDiv.className = 'col d-grid';
             colDiv.style.height = '90%'
@@ -197,7 +197,7 @@
                 var divText = document.createTextNode('');
                 colDiv.style.alignContent = 'center'
                 colDiv.appendChild(divText);
-            }else if (j === 7 ){
+            }else if (j === 9 ){
                 var divText = document.createTextNode('');
                 colDiv.style.alignContent = 'center'
                 colDiv.appendChild(divText);
