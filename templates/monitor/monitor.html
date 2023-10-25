@@ -112,12 +112,12 @@
         rowDiv.className = 'row no-gutters align-items-center';
         rowDiv.id = 'section';
         rowDiv.style.padding = '0 0.25rem';
-        for (var j = 0; j < 7 ; j++){
-            var colList = ['', 'A', 'B', 'C', 'D', 'E', 'F'];
+        for (var j = 0; j < 9 ; j++){
+            var colList = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
             var colDiv = document.createElement('div');
             colDiv.className = 'col col-lg-1 d-grid';
             colDiv.style.height = '90%';
-            colDiv.style.margin = '0 0.5rem';
+            colDiv.style.margin = '0 0.2rem';
             colDiv.style.padding = '0'
             if (i === 0 & j === 0) {
                 var divText = document.createTextNode('');
@@ -140,7 +140,9 @@
                 btn.className = 'btn btn-secondary';
                 btn.disabled = true;
                 btn.id = colList[j] + i.toString();
-                btn.style.padding = '0 0.25rem';
+                btn.style.padding = '0 0.2rem';
+                btn.style.width = '2.25rem';
+                btn.style.fontSize = '0.95rem'
                 btn.setAttribute('data-bs-toggle', 'tooltip')
                 btn.setAttribute('data-bs-placement', 'right')
                 btn.setAttribute('title', btn.id+"&#013"+'peko')
@@ -204,7 +206,7 @@
             },
             success: function(context){
                 var sections = JSON.parse(context)['sections'];
-                var col = ['A', 'B', 'C', 'D', 'E', 'F']
+                var col = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
                 for(let i = 0; i < col.length; i++){
                     for(let j = 1; j < 37; j++){
                         var btn = document.getElementById(col[i]+String(j))
