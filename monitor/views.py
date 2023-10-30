@@ -649,14 +649,14 @@ def demo(request):
                 inputs.append([img.id, img.image.path])
 
             # Check if there is an existing lasting demo with 'patrol' as the source
-            latest_patrol_demo = Demo.objects.filter(source="patrol").first()
-            if latest_patrol_demo:
+            latest_patrol_demo = Demo.objects.filter(source="patrol").order_by('-date').first()
+            if latest_patrol_demo and (ResultList.objects.filter(demo=latest_patrol_demo.id).first() is not None):
                 latest_patrol_demo_predict_time = ResultList.objects.filter(demo=latest_patrol_demo.id).first().date
 
                 # calculate the time between now and lastest patrol demo
                 current_time = timezone.now() # django time object
                 time_difference = current_time - latest_patrol_demo_predict_time
-                if time_difference < timedelta(minutes=10):
+                if time_difference < timedelta(minutes=2):
                     demo_model = latest_patrol_demo
                 else:
                     # if timedelta not in spcify delta, create a new demo object
