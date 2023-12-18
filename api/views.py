@@ -68,11 +68,11 @@ class BatchSearchView(generics.ListAPIView):
 
 
 def determine_density(stalk_count):
-    if stalk_count > 15:
+    if stalk_count > 25:
         density = "high"
-    elif 10 <= stalk_count <= 20:
+    elif 15 <= stalk_count <= 25:
         density = "medium"
-    elif stalk_count < 10:
+    elif stalk_count < 15:
         density = "low"
 
     return density
