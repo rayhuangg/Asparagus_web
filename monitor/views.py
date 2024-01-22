@@ -682,7 +682,7 @@ def demo(request):
             pred_classes = predictions['instances'].pred_classes.cpu().numpy()
             pred_scores = predictions['instances'].scores.cpu().numpy()
             print(pred_scores, flush=True)
-            pred_boxes = np.asarray(predictions["instances"].pred_boxes)
+            pred_boxes = predictions["instances"].pred_boxes.tensor.cpu().numpy()
             pred_masks = predictions["instances"].pred_masks.cpu().numpy()
             pred_all = []
             for i in range(len(pred_classes)):
