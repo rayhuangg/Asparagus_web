@@ -1,3 +1,5 @@
+# 根據指定的日期區間，把上傳的照片複製到指定資料夾中
+
 import os
 import sys
 import django
@@ -13,7 +15,7 @@ from record.models import ImageList
 
 
 # 指定开始和结束日期
-total_start_date = datetime(2022, 3, 26, 0, 0, 0).astimezone(pytz.timezone('Asia/Taipei'))
+total_start_date = datetime(2021, 8, 10, 0, 0, 0).astimezone(pytz.timezone('Asia/Taipei'))
 total_end_date = datetime(2022, 9, 5, 0, 0, 0).astimezone(pytz.timezone('Asia/Taipei'))
 
 # 指定目标文件夹的根路径
