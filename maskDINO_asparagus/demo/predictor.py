@@ -63,18 +63,6 @@ class VisualizationDemo(object):
                 )
             if "instances" in predictions:
                 instances = predictions["instances"].to(self.cpu_device)
-                # 原本會輸出全部topk=100個instance，修改demo code使其只會輸出大於自己設定score的instance，一樣維持topk=100
-                # instances_ = Instances(instances.image_size)
-                # flag = False
-                # for index in range(len(instances)):
-                #     # print(instances[index].scores)
-                #     score = instances[index].scores[0]
-                #     if score > 0.75: # 置信度设置
-                #         if flag == False:
-                #             instances_ = instances[index]
-                #             flag = True
-                #         else:
-                #             instances_ = Instances.cat([instances_, instances[index]])
                 vis_output = visualizer.draw_instance_predictions(predictions=instances)
 
         return predictions, vis_output

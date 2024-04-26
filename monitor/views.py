@@ -75,6 +75,7 @@ def index(request):
         if scales:
             context['thermaltime'] = thermalTime(image.date.astimezone(pytz.timezone('Asia/Taipei')))
         for instance in instances:
+            # spear, stalk, bar, clump
             if instance.predicted_class != 'straw':
                 scale = closest_scale(scales, instance)
                 if scale != 0:
@@ -87,6 +88,8 @@ def index(request):
                 else:
                     scale = 0
                     scale_width = 0
+
+            # straw type
             else:
                 scale = instance.height
                 scale_width = instance.width
@@ -552,6 +555,67 @@ def straw_detection(path):
             widths.append(width)
     return boxes, widths
 
+
+
+def calculate_pixel_height_width(pred_masks, target_index, image_size):
+    """
+    Calculates the height and width of the object based on the mask. (GPT)
+
+    Args:
+        pred_masks (numpy.ndarray): Array of predicted masks.
+        target_index (int): Index of the target object.
+        image_size (tuple): Tuple representing the image dimensions (height, width).
+
+    Returns:
+        tuple: Height and width of the object.
+    """
+    props = measure.regionprops((pred_masks[target_index]).astype(np.uint8))
+
+    # Extract major and minor axis lengths
+    height = props[0].major_axis_length
+    width = props[0].minor_axis_length
+
+    # Calculate orientation angle, centroid, and rotate the mask
+    angle = props[0].orientation * 180 / (math.pi)
+    centroid = props[0].centroid
+    mask_t_uint255 = (pred_masks[target_index].astype(np.uint8) * 255)
+    M = cv2.getRotationMatrix2D(centroid, -angle, 1.0)
+    rotated_img = cv2.warpAffine(mask_t_uint255, M, image_size)
+
+    # Perform Canny edge detection on the rotated image
+    edges = (feature.canny(rotated_img).astype(np.uint8) * 255)
+
+    # Extract sub-images based on different points
+    point_left = (int(centroid[0] - width), int(centroid[1] - height / 2))
+    point_right = (int(centroid[0] + width), int(centroid[1] + height / 2))
+    new_image_crop = rotated_img[point_left[1]:point_right[1], point_left[0]:point_right[0]]
+
+    point_left = (int(centroid[0] - width / 2), int(centroid[1] - height / 2))
+    point_right = (int(centroid[0] + width / 2), int(centroid[1] + height / 2))
+    new_image_crop1 = rotated_img[point_left[1]:point_right[1], point_left[0]:point_right[0]]
+
+    point_left = (int(centroid[0] - width), int(centroid[1] - height / 4))
+    point_right = (int(centroid[0] + width), int(centroid[1] + height / 4))
+    new_image_crop2 = edges[point_left[1]:point_right[1], point_left[0]:point_right[0]]
+
+    # Calculate width based on Canny edge detection
+    try:
+        indices = np.where(new_image_crop2 != [0])
+        indices_left = [indices[1][i] for i in range(len(indices[1])) if indices[1][i] < width]
+        indices_right = [indices[1][i] for i in range(len(indices[1])) if indices[1][i] > width]
+        canny_x_start = sum(indices_left) / len(indices_left)
+        canny_x_end = sum(indices_right) / len(indices_right)
+        width = abs(canny_x_end - canny_x_start)
+    except:
+        width = props[0].minor_axis_length
+
+    # Skeletonize the mask to calculate height
+    skeleton = (morphology.skeletonize(pred_masks[target_index].astype(np.uint8))).astype(np.uint8)
+    height = int(np.sum(skeleton))
+
+    return height, width
+
+
 # Function to handle POST requests when the "demo" button is pressed on the record page.
 # Or trigger by the patrol_image_Instant_detect_toggle checkbox
 def demo(request):
@@ -681,7 +745,6 @@ def demo(request):
             predictions, visualized_output = demo.run_on_image(img)
             pred_classes = predictions['instances'].pred_classes.cpu().numpy()
             pred_scores = predictions['instances'].scores.cpu().numpy()
-            print(pred_scores, flush=True)
             pred_boxes = predictions["instances"].pred_boxes.tensor.cpu().numpy()
             pred_masks = predictions["instances"].pred_masks.cpu().numpy()
             pred_all = []
@@ -720,60 +783,18 @@ def demo(request):
                     width = bbox[2] - bbox[0]
                 elif segmentation == []:
                     continue
+
+                # Main function, calculate mask height/width
                 else:
                     new_segmentation = []
                     for j, seg in enumerate(segmentation):
                         if j % 10 == 1:
                             new_segmentation.append(seg)
-
-
-                    distance_transformation = ndimage.distance_transform_edt(pred_masks[i])
+                    # distance_transformation = ndimage.distance_transform_edt(pred_masks[i])
                     # props = measure.regionprops((pred_masks[i].T).astype(np.uint8))
-                    props = measure.regionprops((pred_masks[i]).astype(np.uint8))
-                    contour = measure.find_contours(pred_masks[i],0.8)
 
-                    height = props[0].major_axis_length
-                    width = props[0].minor_axis_length
-
-                    image_size = (1920,1080)
-                    angle = props[0].orientation*180/(math.pi)
-                    centroid = props[0].centroid
-                    mask_t_uint255 = (pred_masks[i].astype(np.uint8)*255)
-                    # centroid = (int(centroid[0]),int(centroid[1]))
-                    M = cv2.getRotationMatrix2D(centroid,-angle,1.0)
-                    rotatedimg = cv2.warpAffine(mask_t_uint255,M,image_size)
-                    edges = (feature.canny(rotatedimg).astype(np.uint8)*255)
-                    point_left = (int(centroid[0]-width),int(centroid[1]-height/2))
-                    point_right = (int(centroid[0]+width),int(centroid[1]+height/2))
-                    new_image_crop = rotatedimg[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-
-                    point_left = (int(centroid[0]-width/2),int(centroid[1]-height/2))
-                    point_right = (int(centroid[0]+width/2),int(centroid[1]+height/2))
-                    new_image_crop1 = rotatedimg[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-
-                    point_left = (int(centroid[0]-width),int(centroid[1]-height/4))
-                    point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
-                    new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-
-                    point_left = (int(centroid[0]-width),int(centroid[1]-height/4))
-                    point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
-                    new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-
-                    try:
-                        indices = np.where(new_image_crop2 != [0])
-                        indices1 = indices[1]<width
-                        indices_left = [ indices[1][i] for i in range(len(indices[1])) if indices[1][i]<width]
-                        indices_right = [ indices[1][i] for i in range(len(indices[1])) if indices[1][i]>width]
-                        canny_x_start = sum(indices_left)/len(indices_left)
-                        canny_x_end = sum(indices_right)/len(indices_right)
-                        width = abs(canny_x_end-canny_x_start)
-                    except:
-                        width = props[0].minor_axis_length
-
-
-                    skeleton = (skeletonize(pred_masks[i].astype(np.uint8))).astype(np.uint8)
-                    height = int(np.sum(skeleton))
-
+                    width, height, _ = img.shape
+                    height, width = calculate_pixel_height_width(pred_masks, i, (height, width))
 
                 instance = Instance(predicted_class=class_id_mdino[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=resultlist_id)
                 instance.save()
