@@ -47,6 +47,7 @@ INSTALLED_APPS = [
     'record.apps.RecordConfig',
     'stats.apps.StatsConfig',
     'lidar.apps.LidarConfig',
+    'spray.apps.SprayConfig',
     'sorl.thumbnail',
     'celery_progress',
     'rest_framework',
@@ -94,6 +95,14 @@ DATABASES = {
 }
 
 DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
+
 
 
 # Password validation
