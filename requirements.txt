@@ -1,18 +1,19 @@
-celery == 5.0.5
-celery-progress == 0.1.0
-Django == 3.1.4
+Django == 4.2.8
+celery
+celery-progress
 djangorestframework
-numpy == 1.19.4
-Pillow == 8.1.2
-plantcv == 3.12.1
+numpy
+Pillow
+plantcv
 pycocotools
-PyMySQL == 1.0.2
-pytz == 2019.3
-schedule == 1.1.0
-scikit-image == 0.18.1
-scipy == 1.6.1
-sorl-thumbnail == 12.7.0
-tqdm == 4.59.0
-# detectron2 == 0.6
-# torch == 2.0.1
-# torchvision == 0.15.2
+PyMySQL
+pytz
+schedule
+scikit-image
+scipy
+sorl-thumbnail
+tqdm
+timm
+torch
+torchvision
+detectron2
