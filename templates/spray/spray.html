@@ -5,12 +5,83 @@
 
 <div id="vehicle-data">
     <!-- Display the vehicle data here -->
+    <p>Click the button below to fetch the latest vehicle data.</p>
 </div>
-
 <button class="btn btn-primary" id="refresh-button">Refresh</button>
 
+<section id="Exp location">
+    <div class="container">
+        <div class="col-md-12">
+            <form>
+                <div class="mb-3">
+                    <label for="location" class="form-label">Location:</label>
+                    <input type="text" class="form-control " id="location">
+                </div>
+                <div class="mb-3">
+                    <label for="greenhouse" class="form-label">Greenhouse:</label>
+                    <input type="text" class="form-control" id="greenhouse">
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+
+<hr>
+
+<section id="real time info">
+    <div class="container">
+        <div class="row mt-3">
+            <div class="col-md-8">
+                <div class="border p-3">
+                    <form>
+                        <div class="mb-3">
+                            <label for="startTime" class="form-label">Start time:</label>
+                            <input type="text" class="form-control border-0" id="startTime">
+                        </div>
+                        <div class="mb-3">
+                            <label for="pesticide" class="form-label">Pesticide:</label>
+                            <input type="text" class="form-control border-0" id="pesticide">
+                        </div>
+                        <div class="mb-3">
+                            <label for="sprayed" class="form-label">Sprayed:</label>
+                            <input type="text" class="form-control border-0" id="sprayed">
+                        </div>
+                        <div class="mb-3">
+                            <label for="remaining" class="form-label">Remaining:</label>
+                            <input type="text" class="form-control border-0" id="remaining">
+                        </div>
+                        <div class="mb-3">
+                            <label for="battery" class="form-label">Battery:</label>
+                            <input type="text" class="form-control border-0" id="battery">
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="border p-3">
+                    <label for="uwbLocation" class="form-label">UWB location</label>
+                    <textarea class="form-control border-0" id="uwbLocation" rows="8"></textarea>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<hr>
+
+<section id="History data">
+    <div class="container">
+        <div class="row p-3 mt-3">
+            <label for="historyData" class="form-label">History data</label>
+            <textarea class="form-control border-0" id="historyData" rows="4"></textarea>
+        </div>
+    </div>
+</section>
+
+
+
 <script>
-    // Function to fetch and display vehicle data
     function getVehicleData() {
         // Make an API call to fetch the data
         fetch('GetVehicleData/')
