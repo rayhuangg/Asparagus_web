@@ -1,7 +1,6 @@
 import time
 import json
 
-
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.core.cache import cache
@@ -9,11 +8,14 @@ from django.http import JsonResponse
 from django.core.cache import cache
 from django.utils.timezone import now
 from rest_framework.views import APIView
+from rest_framework import generics
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
+from rest_framework import status
+
 
 from .models import FertilizerList, SprayExperimentRecord
-from .serializers import SprayExperimentRecordSerializer
+from .serializers import SprayExperimentRecordSerializer, FertilizerListSerializer
 
 
 # Main front view page entrance.
@@ -26,7 +28,7 @@ def index(request):
 def update_experiment_info(request):
     data = request.data
     status = data.get('status', None)
-    print(f"{data = }")
+    # print(f"{data = }")
 
     if status == 'start':
         # 檢查最新的一筆資料是否有 end_time，若無，設定其 end_time
@@ -37,10 +39,11 @@ def update_experiment_info(request):
 
         # 創建新的實驗記錄
         serializer = SprayExperimentRecordSerializer(data=data['content'])
+        print(f"{data['content'] = }")
         if serializer.is_valid():
-            # serializer.save(start_time=now())
+            serializer.save(start_time=now())
             print(f"{serializer.data = }")
-            return Response(serializer.data, status=201)
+            return Response(serializer.data, status=200)
         else:
             print(f"{serializer.errors = }")
             return Response(serializer.errors, status=400)
@@ -69,6 +72,8 @@ class VehicleRealTimeData(APIView):
         data = cache.get("vehicle_status")
         # TODO
         # 加上上次實驗時間地點(DB)
+
+        # TODO: 加入前端顯示
         if data is not None:
             return Response(data)
         else:
@@ -77,7 +82,8 @@ class VehicleRealTimeData(APIView):
     def post(self, request):
         # Extract information from the JSON data in the request body,
         # REST API does not support form data type, used body instead
-        print(data)
+        print(request.data)
+        data = request.data
         uwb_coordinates = data.get("uwb_coordinates")
         battery_level = data.get("battery_level")
         sprayed_pesticide = data.get("sprayed_pesticide")
@@ -97,11 +103,25 @@ class VehicleRealTimeData(APIView):
 
 
 
-def retrive_lication_list(request):
+def retrive_location_list(request):
     pass
 
 def retrive_greenhouse_list(request):
     pass
 
-def retrive_fertilizer_list(request):
-    pass
+
+class FertilizerListView(APIView):
+    def get(self, request):
+        fertilizers = FertilizerList.objects.all()
+        serializer = FertilizerListSerializer(fertilizers, many=True)
+        return Response(serializer.data)
+
+    def post(self, request):
+        serializer = FertilizerListSerializer(data=request.data)
+        if serializer.is_valid():
+            name = serializer.validated_data.get('name')
+            if FertilizerList.objects.filter(name=name).exists():
+                return Response({'name': 'A fertilizer with this name already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

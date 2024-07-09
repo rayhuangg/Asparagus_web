@@ -18,8 +18,10 @@ class SprayExperimentRecordSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
+        # print(validated_data)
         fertilizers_data = validated_data.pop('fertilizer')
         experiment = SprayExperimentRecord.objects.create(**validated_data)
+        print(f"sss {fertilizers_data = }")
         for fert_name in fertilizers_data:
             try:
                 fertilizer = FertilizerList.objects.get(name=fert_name)
@@ -31,3 +33,9 @@ class SprayExperimentRecordSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         # Implement similar logic for update if necessary
         return super().update(instance, validated_data)
+
+
+class FertilizerListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FertilizerList
+        fields = ['id', 'name']

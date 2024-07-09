@@ -18,8 +18,8 @@ class SprayExperimentRecord(models.Model):
     greenhouse = models.CharField(max_length=255)
     fertilizer = models.ManyToManyField(FertilizerList)
     start_time = models.DateTimeField(default=now)
-    end_time = models.DateTimeField()
-    fertilizer_total_amount = models.FloatField()
+    end_time = models.DateTimeField(null=True, blank=True)
+    fertilizer_total_amount = models.FloatField(null=True, blank=True)
 
     class Meta:
         app_label = 'spray'
