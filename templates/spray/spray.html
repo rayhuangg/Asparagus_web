@@ -1,17 +1,22 @@
 {% extends '../layout.html' %}
 
 {% block body %}
-
+<style>
+    #experiment-list {
+        max-height: 500px;
+        overflow-y: scroll;
+    }
+</style>
 
 <div id="vehicle-data">
     <!-- Display the vehicle data here -->
     <p>Click the button below to fetch the latest vehicle data.</p>
 </div>
-<button class="btn btn-primary" id="refresh-button">Refresh</button>
+<button class="btn btn-primary " id="refresh-button">Refresh</button>
 
 <section id="Exp location">
-    <div class="container">
-        <div class="col-md-12">
+    <div class="row">
+        <div class="col-md-6 mx-auto">
             <form>
                 <div class="mb-3">
                     <label for="location" class="form-label">Location:</label>
@@ -29,91 +34,187 @@
 <hr>
 
 <section id="real time info">
-    <div class="container">
-        <div class="row mt-3">
-            <div class="col-md-8">
-                <div class="border p-3">
+    <div class="row justify-content-center">
+        <div class="col-8">
+            <div class="row">
+                <div class="col-4">
                     <form>
-                        <div class="mb-3">
-                            <label for="startTime" class="form-label">Start time:</label>
-                            <input type="text" class="form-control border-0" id="startTime">
+                        <div class="row mb-2">
+                            <label for="startTime" class="col-sm-5 col-form-label">Start time:</label>
+                            <div class="col-sm">
+                                <input type="text" class="form-control border-0" id="startTime">
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="pesticide" class="form-label">Pesticide:</label>
-                            <input type="text" class="form-control border-0" id="pesticide">
+                        <div class="row mb-2">
+                            <label for="pesticide" class="col-sm-5 col-form-label">Pesticide:</label>
+                            <div class="col-sm">
+                                <input type="text" class="form-control border-0" id="pesticide">
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="sprayed" class="form-label">Sprayed:</label>
-                            <input type="text" class="form-control border-0" id="sprayed">
+                        <div class="row mb-2">
+                            <label for="sprayed" class="col-sm-5 col-form-label">Sprayed:</label>
+                            <div class="col-sm">
+                                <input type="text" class="form-control border-0" id="sprayed">
+                            </div>
+                            <div class="col-sm-3 d-flex align-items-center">
+                                <span>L</span>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="remaining" class="form-label">Remaining:</label>
-                            <input type="text" class="form-control border-0" id="remaining">
+                        <div class="row mb-2">
+                            <label for="remaining" class="col-sm-5 col-form-label">Remaining:</label>
+                            <div class="col-sm">
+                                <input type="text" class="form-control border-0" id="remaining">
+                            </div>
+                            <div class="col-sm-3 d-flex align-items-center">
+                                <span>L</span>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label for="battery" class="form-label">Battery:</label>
-                            <input type="text" class="form-control border-0" id="battery">
+                        <div class="row mb-2">
+                            <label for="battery" class="col-sm-5 col-form-label">Battery:</label>
+                            <div class="col-sm">
+                                <input type="text" class="form-control border-0" id="battery">
+                            </div>
+                            <div class="col-sm-3 d-flex align-items-center">
+                                <span>%</span>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <label for="UWB" class="col-sm-5 col-form-label">UWB coordinates:</label>
+                            <div class="col-sm">
+                                <input type="text" class="form-control border-0" id="UWB">
+                            </div>
+                            <div class="col-sm-3 d-flex align-items-center">
+                                <span>(x, y)</span>
+                            </div>
                         </div>
                     </form>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="border p-3">
-                    <label for="uwbLocation" class="form-label">UWB location</label>
-                    <textarea class="form-control border-0" id="uwbLocation" rows="8"></textarea>
+                <div class="col-8">
+                    <div class="border p-3">
+                        <label for="uwbLocation" class="form-label">UWB location</label>
+                        <textarea class="form-control border-0" id="uwbLocation" rows="8"></textarea>
+                    </div>
                 </div>
             </div>
         </div>
-
     </div>
 </section>
 
 <hr>
 
 <section id="History data">
-    <div class="container">
-        <div class="row p-3 mt-3">
-            <label for="historyData" class="form-label">History data</label>
-            <textarea class="form-control border-0" id="historyData" rows="4"></textarea>
+    <div class="row justify-content-center">
+        <div class="col-8">
+            <div class="row">
+                <label for="historyData" class="form-label">History data</label>
+                <div id="experiment-list" class="list-group"></div>
+                <div class="d-flex justify-content-between mt-3">
+                    <button id="prev-page" class="btn btn-primary">Previous Page</button>
+                    <button id="next-page" class="btn btn-primary">Next Page</button>
+                </div>
+            </div>
+        </div>
+</section>
+
+
+<section id="Fertilizer DB data">
+    <div class="row justify-content-center">
+        <div class="col-8" style="margin-bottom: 5rem">
+            <div class="row">
+                <label>Fertilizer Database List</label>
+                <ul id="fertilizer-list" class="list-group">
+                    <!-- Fertilizer items will be dynamically added here -->
+                </ul>
+            </div>
         </div>
     </div>
 </section>
 
 
-
 <script>
     function getVehicleData() {
-        // Make an API call to fetch the data
-        fetch('GetVehicleData/')
+        fetch('vehicleData/')
             .then(response => response.json())
             .then(data => {
-                // Display the data in the 'vehicle-data' div
                 const vehicleDataDiv = document.getElementById('vehicle-data');
                 if (data.error) {
                     vehicleDataDiv.innerHTML = data.error;
-                } else if (data.uwb_coordinates && data.uwb_coordinates.length > 0) {
-                    // Display the data in the 'vehicle-data' div
-                    vehicleDataDiv.innerHTML = `
-                        <p>UWB coordinates: ${data.uwb_coordinates}</p>
-                        <p>Battery: ${data.battery_level}</p>
-                        <p>Sprayed: ${data.sprayed_pesticide}</p>
-                        <p>Remaining pesticide: ${data.remaining_pesticide}</p>
-                        <!-- Add more data fields here -->
-                    `;
+                } else if (data.battery_level > 0) {
+                    document.getElementById('battery').value = data.battery_level;
+                    document.getElementById('sprayed').value = data.sprayed_pesticide;
+                    document.getElementById('remaining').value = data.remaining_pesticide;
+                    document.getElementById('UWB').value = data.uwb_coordinates;
                 } else {
                     vehicleDataDiv.innerHTML = 'NO RECENT DATA';
                 }
-                console.log(data); // Log the fetched data to the console
             })
             .catch(error => {
                 console.error('Error:', error);
             });
     }
 
-    // Add event listener to the API button
-    const apiButton = document.getElementById('refresh-button');
-    apiButton.addEventListener('click', getVehicleData);
-</script>
+    document.getElementById('refresh-button').addEventListener('click', getVehicleData);
 
+    document.addEventListener('DOMContentLoaded', function() {
+        fetch('fertilizers/')
+            .then(response => response.json())
+            .then(data => {
+                const fertilizerList = document.getElementById('fertilizer-list');
+                data.forEach(fertilizer => {
+                    const listItem = document.createElement('li');
+                    listItem.className = 'list-group-item';
+                    listItem.textContent = `ID: ${fertilizer.id},  Name: ${fertilizer.name}`;
+                    fertilizerList.appendChild(listItem);
+                });
+            })
+            .catch(error => console.error('Error fetching fertilizer data:', error));
+    });
+
+    function formatDate(dateStr) {
+        const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        return new Date(dateStr).toLocaleDateString(undefined, options);
+    }
+
+    let currentPage = 1;
+    function loadExperiments(page) {
+        $.ajax({
+            url: `experiments/?page=${page}`,
+            method: 'GET',
+            success: function(data) {
+                $('#experiment-list').empty();
+                data.results.forEach(record => {
+                    $('#experiment-list').append(
+                        `<div class="list-group-item">
+                            <h5>${record.location} - ${record.greenhouse}</h5>
+                            <p>Fertilizer Total Amount: ${record.fertilizer_total_amount}</p>
+                            <p>Start Time: ${formatDate(record.start_time)}</p>
+                            <p>End Time: ${record.end_time ? formatDate(record.end_time) : 'N/A'}</p>
+                        </div>`
+                    );
+                });
+
+                $('#prev-page').prop('disabled', !data.previous);
+                $('#next-page').prop('disabled', !data.next);
+            },
+            error: function(error) {
+                console.error('Error fetching experiments:', error);
+            }
+        });
+    }
+
+    $('#next-page').on('click', function() {
+        currentPage += 1;
+        loadExperiments(currentPage);
+    });
+
+    $('#prev-page').on('click', function() {
+        if (currentPage > 1) {
+            currentPage -= 1;
+            loadExperiments(currentPage);
+        }
+    });
+
+    loadExperiments(currentPage);
+</script>
 
 {% endblock %}

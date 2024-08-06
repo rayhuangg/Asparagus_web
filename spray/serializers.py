@@ -18,15 +18,13 @@ class SprayExperimentRecordSerializer(serializers.ModelSerializer):
         }
 
     def create(self, validated_data):
-        # print(validated_data)
         fertilizers_data = validated_data.pop('fertilizer')
         experiment = SprayExperimentRecord.objects.create(**validated_data)
-        print(f"sss {fertilizers_data = }")
         for fert_name in fertilizers_data:
             try:
                 fertilizer = FertilizerList.objects.get(name=fert_name)
             except FertilizerList.DoesNotExist:
-                raise serializers.ValidationError(f"Fertilizer '{fert_name}' does not exist.")
+                raise serializers.ValidationError()
             experiment.fertilizer.add(fertilizer)
         return experiment
 

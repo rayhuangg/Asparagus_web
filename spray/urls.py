@@ -4,7 +4,7 @@ from . import views
 urlpatterns = [
     path('', views.index, name=''),
     # path('UpdataVehicleData/', views.update_vehicle_data),
-    # path('GetVehicleData/', views.get_vehicle_data),
+    # path('GetVehicleData/', views.vehicleData),
 
     # POST immediately data, GET newest data
     path("vehicleData/", views.VehicleRealTimeData.as_view()),
@@ -15,5 +15,7 @@ urlpatterns = [
     # GET all fertilizers, POST a new fertilizer
     path('fertilizers/', views.FertilizerListView.as_view(), name='fertilizer-list'),
 
+    # GET all experiment records
+    path('experiments/', views.SprayExperimentRecordListView.as_view(), name='experiment-list'),
 
 ]
