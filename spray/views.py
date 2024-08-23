@@ -28,7 +28,6 @@ def index(request):
 def update_experiment_info(request):
     data = request.data
     status = data.get('status', None)
-    # print(f"{data = }")
 
     if status == 'start':
         # 檢查最新的一筆資料是否有 end_time，若無，設定其 end_time
@@ -39,29 +38,29 @@ def update_experiment_info(request):
 
         # 創建新的實驗記錄
         serializer = SprayExperimentRecordSerializer(data=data['content'])
-        # print(f"{data['content'] = }")
         if serializer.is_valid():
             serializer.save(start_time=now())
-            print(f"{serializer.data = }")
             return Response(serializer.data, status=200)
         else:
-            print(f"{serializer.errors = }")
             return Response(serializer.errors, status=400)
 
     elif status == 'end':
         # 將 end_time 設定為目前時間，並更新 fertilizer_total_amount
         last_record = SprayExperimentRecord.objects.last()
-        if last_record: # TODO 新增確定沒有結束時間嗎?
-            update_data = {
-                'end_time': now(),
-                'fertilizer_total_amount': data['content'].get('fertilizer_total_amount')
-            }
-            serializer = SprayExperimentRecordSerializer(last_record, data=update_data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=200)
+        if last_record:
+            if last_record.end_time:
+                return Response({'error': 'The last experiment has already ended'}, status=400)
             else:
-                return Response(serializer.errors, status=400)
+                update_data = {
+                    'end_time': now(),
+                    'fertilizer_total_amount': data['content'].get('fertilizer_total_amount')
+                }
+                serializer = SprayExperimentRecordSerializer(last_record, data=update_data, partial=True)
+                if serializer.is_valid():
+                    serializer.save()
+                    return Response(serializer.data, status=200)
+                else:
+                    return Response(serializer.errors, status=400)
         else:
             return Response({'error': 'No active experiment to end'}, status=404)
 
@@ -86,7 +85,6 @@ class VehicleRealTimeData(APIView):
     def post(self, request):
         # Extract information from the JSON data in the request body,
         # REST API does not support form data type, used body instead
-        print(request.data)
         data = request.data
         uwb_coordinates = data.get("uwb_coordinates")
         battery_level = data.get("battery_level")
@@ -141,7 +139,7 @@ def retrive_greenhouse_list(request):
 
 
 class SprayExperimentRecordPagination(PageNumberPagination):
-    page_size = 10
+    page_size = 3
 
 class SprayExperimentRecordListView(generics.ListCreateAPIView):
     queryset = SprayExperimentRecord.objects.all().order_by('-experiment_id')
