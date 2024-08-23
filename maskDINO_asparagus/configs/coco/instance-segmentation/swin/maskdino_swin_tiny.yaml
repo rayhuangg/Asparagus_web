@@ -1,0 +1,29 @@
+_BASE_: maskdino_R50_bs16_50ep_4s_dowsample1_1024.yaml
+MODEL:
+  BACKBONE:
+    NAME: "D2SwinTransformer"
+  SWIN:
+    EMBED_DIM: 96
+    DEPTHS: [2, 2, 6, 2]
+    NUM_HEADS: [3, 6, 12, 24]
+    WINDOW_SIZE: 7
+    APE: False
+    DROP_PATH_RATE: 0.3
+    PATCH_NORM: True
+    PRETRAIN_IMG_SIZE: 224
+
+SOLVER:
+  MAX_ITER: 150000
+  STEPS: (90000, 130000)
+  CHECKPOINT_PERIOD: 15000
+DATASETS:
+  TRAIN: ("asparagus_train_full_1920",)
+  TEST: ("asparagus_val_full_1920",)
+  # TEST: ("asparagus_val_small",)
+  # TRAIN: ("asparagus_train_small",)
+INPUT:
+  MAX_SIZE_TEST: 1333
+  MAX_SIZE_TRAIN: 1333
+TEST:
+  EVAL_PERIOD: 15000 # default 5000
+SEED: 10631026

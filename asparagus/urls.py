@@ -27,6 +27,7 @@ urlpatterns = [
     path('lidar/', include('lidar.urls')),
     path('admin/', admin.site.urls),
     path('api/', include('api.urls')),
+    path('spray/', include('spray.urls')),
     re_path(r'^celery-progress/', include('celery_progress.urls')),
 ]
 

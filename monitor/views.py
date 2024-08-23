@@ -38,7 +38,12 @@ from detectron2.config import get_cfg
 from detectron2.data.detection_utils import read_image
 from detectron2.utils.logger import setup_logger
 from skimage import measure, morphology,feature
-from detectron.demo.predictor import VisualizationDemo
+from detectron.demo.predictor import VisualizationDemo as VisualizationDemo_mrcnn
+
+from detectron2.projects.deeplab import add_deeplab_config
+from maskDINO_asparagus.maskdino import add_maskdino_config
+from maskDINO_asparagus.demo.predictor import VisualizationDemo as VisualizationDemo_mdino
+from maskDINO_asparagus.register_dataset import register_my_dataset
 
 # Create your views here.
 @csrf_exempt
@@ -70,6 +75,7 @@ def index(request):
         if scales:
             context['thermaltime'] = thermalTime(image.date.astimezone(pytz.timezone('Asia/Taipei')))
         for instance in instances:
+            # spear, stalk, bar, clump
             if instance.predicted_class != 'straw':
                 scale = closest_scale(scales, instance)
                 if scale != 0:
@@ -82,6 +88,8 @@ def index(request):
                 else:
                     scale = 0
                     scale_width = 0
+
+            # straw type
             else:
                 scale = instance.height
                 scale_width = instance.width
@@ -120,6 +128,7 @@ def index(request):
                                             })
 
         return HttpResponse(json.dumps(context))
+
     demos = [d for d in Demo.objects.all()] # {{ demolist.name }} form
     demo_range = [ [d.id, d.name] for d in Demo.objects.all()]
     sections = [ s for s in Section.objects.all()]
@@ -463,15 +472,17 @@ def get_latest():
     return url_set
 
 def setup_cfg():
-    # load config from file and command-line arguments
     cfg = get_cfg()
-    cfg.merge_from_file("detectron/output/model_straw.yaml")
-    # cfg.merge_from_list(args.opts)
-    # Set score_threshold for builtin models
-    cfg.MODEL.WEIGHTS = "detectron/output/model_straw.pth"
-    cfg.MODEL.RETINANET.SCORE_THRESH_TEST = 0.5
-    cfg.MODEL.ROI_HEADS.SCORE_THRESH_TEST = 0.5
-    cfg.MODEL.PANOPTIC_FPN.COMBINE.INSTANCES_CONFIDENCE_THRESH = 0.5
+    add_maskdino_config(cfg)
+    add_deeplab_config(cfg)
+
+    # Justin Mask RCNN
+    # cfg.merge_from_file("detectron/output/model_straw.yaml")
+    # cfg.MODEL.WEIGHTS = "detectron/output/model_straw.pth"
+
+    # Ray Huang Mask DINO
+    cfg.merge_from_file("maskDINO_asparagus/output/20230812_110004_R50_normal_retrain_on_straw/config.yaml")
+    cfg.MODEL.WEIGHTS = "maskDINO_asparagus/output/20230812_110004_R50_normal_retrain_on_straw/model_final.pth"
     cfg.freeze()
     return cfg
 
@@ -543,6 +554,67 @@ def straw_detection(path):
             boxes.append(box)
             widths.append(width)
     return boxes, widths
+
+
+
+def calculate_pixel_height_width(pred_masks, target_index, image_size):
+    """
+    Calculates the height and width of the object based on the mask. (GPT)
+
+    Args:
+        pred_masks (numpy.ndarray): Array of predicted masks.
+        target_index (int): Index of the target object.
+        image_size (tuple): Tuple representing the image dimensions (height, width).
+
+    Returns:
+        tuple: Height and width of the object.
+    """
+    props = measure.regionprops((pred_masks[target_index]).astype(np.uint8))
+
+    # Extract major and minor axis lengths
+    height = props[0].major_axis_length
+    width = props[0].minor_axis_length
+
+    # Calculate orientation angle, centroid, and rotate the mask
+    angle = props[0].orientation * 180 / (math.pi)
+    centroid = props[0].centroid
+    mask_t_uint255 = (pred_masks[target_index].astype(np.uint8) * 255)
+    M = cv2.getRotationMatrix2D(centroid, -angle, 1.0)
+    rotated_img = cv2.warpAffine(mask_t_uint255, M, image_size)
+
+    # Perform Canny edge detection on the rotated image
+    edges = (feature.canny(rotated_img).astype(np.uint8) * 255)
+
+    # Extract sub-images based on different points
+    point_left = (int(centroid[0] - width), int(centroid[1] - height / 2))
+    point_right = (int(centroid[0] + width), int(centroid[1] + height / 2))
+    new_image_crop = rotated_img[point_left[1]:point_right[1], point_left[0]:point_right[0]]
+
+    point_left = (int(centroid[0] - width / 2), int(centroid[1] - height / 2))
+    point_right = (int(centroid[0] + width / 2), int(centroid[1] + height / 2))
+    new_image_crop1 = rotated_img[point_left[1]:point_right[1], point_left[0]:point_right[0]]
+
+    point_left = (int(centroid[0] - width), int(centroid[1] - height / 4))
+    point_right = (int(centroid[0] + width), int(centroid[1] + height / 4))
+    new_image_crop2 = edges[point_left[1]:point_right[1], point_left[0]:point_right[0]]
+
+    # Calculate width based on Canny edge detection
+    try:
+        indices = np.where(new_image_crop2 != [0])
+        indices_left = [indices[1][i] for i in range(len(indices[1])) if indices[1][i] < width]
+        indices_right = [indices[1][i] for i in range(len(indices[1])) if indices[1][i] > width]
+        canny_x_start = sum(indices_left) / len(indices_left)
+        canny_x_end = sum(indices_right) / len(indices_right)
+        width = abs(canny_x_end - canny_x_start)
+    except:
+        width = props[0].minor_axis_length
+
+    # Skeletonize the mask to calculate height
+    skeleton = (morphology.skeletonize(pred_masks[target_index].astype(np.uint8))).astype(np.uint8)
+    height = int(np.sum(skeleton))
+
+    return height, width
+
 
 # Function to handle POST requests when the "demo" button is pressed on the record page.
 # Or trigger by the patrol_image_Instant_detect_toggle checkbox
@@ -635,42 +707,46 @@ def demo(request):
             for img in imgs:
                 if img.section.name not in sectiondict:
                     sectiondict[img.section.name] = img
-                elif img.date > sectiondict[img.section.name].date:
+                elif img.date > sectiondict[img.section.naㄅme].date:
                     sectiondict[img.section.name] = img
             for _, img in sectiondict.items():
                 inputs.append([img.id, img.image.path])
 
             # FIXME: change to use the photo upload time
             # Check if there is an existing lasting demo with 'patrol' as the source
-            latest_demo = Demo.objects.order_by('-date').first()
-            if latest_demo:
+            latest_patrol_demo = Demo.objects.filter(source="patrol").order_by('-date').first()
+            if latest_patrol_demo and (ResultList.objects.filter(demo=latest_patrol_demo.id).first() is not None):
+                latest_patrol_demo_predict_time = ResultList.objects.filter(demo=latest_patrol_demo.id).first().date
+
                 # calculate the time between now and lastest patrol demo
                 current_time = timezone.now() # django time object
-                time_difference = current_time - latest_demo.date
-                if latest_demo.source == 'patrol' and time_difference < timedelta(minutes=5):
-                    demo_model = latest_demo
+                time_difference = current_time - latest_patrol_demo_predict_time
+                if time_difference < timedelta(minutes=2):
+                    demo_model = latest_patrol_demo
                 else:
-                    # if not, create a new demo object
+                    # if timedelta not in spcify delta, create a new demo object
                     demo_model = Demo.objects.create(source="patrol")
                     demo_model.save()
             else:
-                # If no existing 'patrol' demo, create a new one
+                # If no existing any 'patrol' demo, create a new one
                 demo_model = Demo.objects.create(source="patrol")
                 demo_model.save()
 
 
         cfg = setup_cfg()
-        demo = VisualizationDemo(cfg)
-        class_id = {1: 'clump', 2: 'stalk' , 3: 'spear', 4: 'bar', 5:'straw'}
+        # demo = VisualizationDemo_mrcnn(cfg)
+        demo = VisualizationDemo_mdino(cfg)
+        class_id_mrcnn = {1: 'clump', 2: 'stalk', 3: 'spear', 4: 'bar', 5:'straw'} # unknown reason begin from 1
+        class_id_mdino = {0: 'stalk', 1: 'spear', 2: 'bar', 3: 'straw'}
         demo_id = demo_model.id
+        print(f"{demo_id = }")
 
         for image_id, path in tqdm.tqdm(inputs):
             img = read_image(path, format="BGR")
             predictions, visualized_output = demo.run_on_image(img)
             pred_classes = predictions['instances'].pred_classes.cpu().numpy()
             pred_scores = predictions['instances'].scores.cpu().numpy()
-            print(pred_scores, flush=True)
-            pred_boxes = np.asarray(predictions["instances"].pred_boxes)
+            pred_boxes = predictions["instances"].pred_boxes.tensor.cpu().numpy()
             pred_masks = predictions["instances"].pred_masks.cpu().numpy()
             pred_all = []
             for i in range(len(pred_classes)):
@@ -703,67 +779,25 @@ def demo(request):
                 except:
                     segmentation = []
 
-                if pred_classes[i] == 1: # 1 means clump
+                if pred_classes[i] == 1: # before 1 means clump, now useless
                     height = bbox[3] - bbox[1]
                     width = bbox[2] - bbox[0]
                 elif segmentation == []:
                     continue
+
+                # Main function, calculate mask height/width
                 else:
                     new_segmentation = []
                     for j, seg in enumerate(segmentation):
                         if j % 10 == 1:
                             new_segmentation.append(seg)
-
-
-                    distance_transformation = ndimage.distance_transform_edt(pred_masks[i])
+                    # distance_transformation = ndimage.distance_transform_edt(pred_masks[i])
                     # props = measure.regionprops((pred_masks[i].T).astype(np.uint8))
-                    props = measure.regionprops((pred_masks[i]).astype(np.uint8))
-                    contour = measure.find_contours(pred_masks[i],0.8)
 
-                    height = props[0].major_axis_length
-                    width = props[0].minor_axis_length
+                    width, height, _ = img.shape
+                    height, width = calculate_pixel_height_width(pred_masks, i, (height, width))
 
-                    image_size = (1920,1080)
-                    angle = props[0].orientation*180/(math.pi)
-                    centroid = props[0].centroid
-                    mask_t_uint255 = (pred_masks[i].astype(np.uint8)*255)
-                    # centroid = (int(centroid[0]),int(centroid[1]))
-                    M = cv2.getRotationMatrix2D(centroid,-angle,1.0)
-                    rotatedimg = cv2.warpAffine(mask_t_uint255,M,image_size)
-                    edges = (feature.canny(rotatedimg).astype(np.uint8)*255)
-                    point_left = (int(centroid[0]-width),int(centroid[1]-height/2))
-                    point_right = (int(centroid[0]+width),int(centroid[1]+height/2))
-                    new_image_crop = rotatedimg[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-
-                    point_left = (int(centroid[0]-width/2),int(centroid[1]-height/2))
-                    point_right = (int(centroid[0]+width/2),int(centroid[1]+height/2))
-                    new_image_crop1 = rotatedimg[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-
-                    point_left = (int(centroid[0]-width),int(centroid[1]-height/4))
-                    point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
-                    new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-
-                    point_left = (int(centroid[0]-width),int(centroid[1]-height/4))
-                    point_right = (int(centroid[0]+width),int(centroid[1]+height/4))
-                    new_image_crop2 = edges[point_left[1]:point_right[1],point_left[0]:point_right[0]]
-
-                    try:
-                        indices = np.where(new_image_crop2 != [0])
-                        indices1 = indices[1]<width
-                        indices_left = [ indices[1][i] for i in range(len(indices[1])) if indices[1][i]<width]
-                        indices_right = [ indices[1][i] for i in range(len(indices[1])) if indices[1][i]>width]
-                        canny_x_start = sum(indices_left)/len(indices_left)
-                        canny_x_end = sum(indices_right)/len(indices_right)
-                        width = abs(canny_x_end-canny_x_start)
-                    except:
-                        width = props[0].minor_axis_length
-
-
-                    skeleton = (skeletonize(pred_masks[i].astype(np.uint8))).astype(np.uint8)
-                    height = int(np.sum(skeleton))
-
-
-                instance = Instance(predicted_class=class_id[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=resultlist_id)
+                instance = Instance(predicted_class=class_id_mdino[pred_classes[i]], score=pred_scores[i], bbox_xmin=bbox[0], bbox_ymin=bbox[1], bbox_xmax=bbox[2], bbox_ymax=bbox[3], mask=segmentation, height=height, width=width, resultlist_id=resultlist_id)
                 instance.save()
             # straw detection
             # if straw == 'true':

@@ -49,6 +49,7 @@
                 <p id="clump">Clump</p>
                 <p id="stalk">Stalk</p>
                 <p id="spear">Spear</p>
+                <p id="density">Density</p>
                 <div class="row">
                     <div class="col" style="padding-right: 0;">
                         <a class="btn btn-primary" id="downloadimage" href="" target="_blank">Download image</a>
@@ -111,12 +112,12 @@
         rowDiv.className = 'row no-gutters align-items-center';
         rowDiv.id = 'section';
         rowDiv.style.padding = '0 0.25rem';
-        for (var j = 0; j < 7 ; j++){
-            var colList = ['', 'A', 'B', 'C', 'D', 'E', 'F'];
+        for (var j = 0; j < 9 ; j++){
+            var colList = ['', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'];
             var colDiv = document.createElement('div');
             colDiv.className = 'col col-lg-1 d-grid';
             colDiv.style.height = '90%';
-            colDiv.style.margin = '0 0.5rem';
+            colDiv.style.margin = '0 0.2rem';
             colDiv.style.padding = '0'
             if (i === 0 & j === 0) {
                 var divText = document.createTextNode('');
@@ -139,7 +140,9 @@
                 btn.className = 'btn btn-secondary';
                 btn.disabled = true;
                 btn.id = colList[j] + i.toString();
-                btn.style.padding = '0 0.25rem';
+                btn.style.padding = '0 0.2rem';
+                btn.style.width = '2.25rem';
+                btn.style.fontSize = '0.95rem'
                 btn.setAttribute('data-bs-toggle', 'tooltip')
                 btn.setAttribute('data-bs-placement', 'right')
                 btn.setAttribute('title', btn.id+"&#013"+'peko')
@@ -203,7 +206,7 @@
             },
             success: function(context){
                 var sections = JSON.parse(context)['sections'];
-                var col = ['A', 'B', 'C', 'D', 'E', 'F']
+                var col = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H']
                 for(let i = 0; i < col.length; i++){
                     for(let j = 1; j < 37; j++){
                         var btn = document.getElementById(col[i]+String(j))
@@ -256,7 +259,7 @@
                     svg.setAttribute('width', img.clientWidth);
                     svg.setAttribute('height', img.clientHeight);
                     svg.style.position = 'absolute';
-                    var clump=0, stalk=0, spear=0;
+                    var clump=0, stalk=0, spear=0, density;
 
                     for (var i = 0; i < context['instance'].length; i++){
                         if (context['instance'][i]['class'] == 'clump'){
@@ -293,12 +296,20 @@
                         obj.setAttribute('id', 'svg'+i.toString());
                         svg.append(obj);
                     }
+                    if (stalk > 15) {
+                        density = "high";
+                    } else if (stalk >= 10) {
+                        density = "medium";
+                    } else {
+                        density = "low";
+                    }
                     document.getElementById('totalToast-title').innerText = context['section'];
                     document.getElementById('instanceId').innerHTML = 'ID: '+context['id'].toString();
                     document.getElementById('date').innerHTML = 'Date: ' + context['date']
                     document.getElementById('clump').innerHTML = 'Clump: '+clump.toString();
                     document.getElementById('stalk').innerHTML = 'Stalk: '+stalk.toString();
                     document.getElementById('spear').innerHTML = 'Spear: '+spear.toString();
+                    document.getElementById('density').innerHTML = 'Density: '+density.toString();
                     document.getElementById('downloadimage').href = context['image']
                     document.getElementById('downloadjson').setAttribute('data-imageid', context['id'])
                     var total_id = document.getElementById('inputGroup1').value
