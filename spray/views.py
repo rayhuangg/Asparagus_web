@@ -1,5 +1,6 @@
 import time
 import json
+import requests
 
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -30,13 +31,13 @@ def update_experiment_info(request):
     status = data.get('status', None)
 
     if status == 'start':
-        # 檢查最新的一筆資料是否有 end_time，若無，設定其 end_time
+        # Check whether the latest data has end_time, if not, set its end_time
         last_record = SprayExperimentRecord.objects.last()
         if last_record and not last_record.end_time:
             last_record.end_time = now()
             last_record.save()
 
-        # 創建新的實驗記錄
+        # Create new experiment record
         serializer = SprayExperimentRecordSerializer(data=data['content'])
         if serializer.is_valid():
             serializer.save(start_time=now())
@@ -45,7 +46,7 @@ def update_experiment_info(request):
             return Response(serializer.errors, status=400)
 
     elif status == 'end':
-        # 將 end_time 設定為目前時間，並更新 fertilizer_total_amount
+        # Set end_time to the current time and update fertilizer_total_amount
         last_record = SprayExperimentRecord.objects.last()
         if last_record:
             if last_record.end_time:
@@ -58,11 +59,47 @@ def update_experiment_info(request):
                 serializer = SprayExperimentRecordSerializer(last_record, data=update_data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
+                    spray_target = data['content'].get('spray_target')
+                    if spray_target:
+                        try:
+                            upload_spray_to_professor_chou(spray_target)
+                        except Exception as e:
+                            return Response({'error': f"Failed to upload spray data: {str(e)}"}, status=500)
+
+
                     return Response(serializer.data, status=200)
                 else:
                     return Response(serializer.errors, status=400)
         else:
             return Response({'error': 'No active experiment to end'}, status=404)
+
+
+# Upload the exp data to the Professor Cheng-Ying Chou pest detection server.
+def upload_spray_to_professor_chou(sprayed_list: list):
+    # 楊詠仁溫室設備名稱
+    # yang-left1, yang-left2, yang-left3, yang-middle1, yang-middle2, yang-middle3, yang-right1, yang-right2, yang-right3
+
+    # 黃彥碩溫室設備名稱
+    # huang-left1, huang-left2, huang-left3, huang-middle1, huang-middle2, huang-middle3, huang-right1, huang-right2, huang-right3
+
+    url = "https://asparagus.agriweather.tw/api/pest/tasks"
+
+    for device in sprayed_list:
+        data = {
+            "deviceHash": device,
+            "status": "done"
+        }
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        response = requests.post(url, data=json.dumps(data), headers=headers)
+
+        if response.status_code == 200:
+            print(f"device: {device} upload successfully")
+        else:
+            raise Exception(f"ERROR: device: {device}, Status Code: {response.status_code}, Response: {response.text}")
+
 
 
 # REST API for getting and updating vehicle real-time data
@@ -114,28 +151,6 @@ class VehicleRealTimeData(APIView):
         # Cache the data with a timeout of 600 seconds
         cache.set("vehicle_status", data, timeout=6000) # TODO:記得改回來
         return Response({"status": "success"}, status=status.HTTP_200_OK)
-
-
-def retrive_location_list(request):
-    pass
-
-def retrive_greenhouse_list(request):
-    pass
-
-# def retrive_exp_history(request):
-#     if request.method == "GET":
-#         context = []
-#         results = SprayExperimentRecord.objects.all()
-
-
-# def preview(request):
-#     if request.method == 'POST':
-#         context = []
-#         sec = request.POST['section']
-#         imgs = ImageList.objects.filter(section__name=sec)[:3]
-#         for img in imgs:
-#             context.append({'name': img.name, 'date': img.date.astimezone(pytz.timezone('Asia/Taipei')).strftime('%Y.%m.%d %H:%M:%S'), 'id': img.id, 'url': img.image.url})
-#         return HttpResponse(json.dumps({'context': context}))
 
 
 class SprayExperimentRecordPagination(PageNumberPagination):
