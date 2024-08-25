@@ -230,6 +230,35 @@
         containerDiv.append(rowDiv);
     };
 
+
+    // add unspecified_right and unspecified_left buttons
+    var btnLeft = document.createElement('button');
+    var btnLeftText = document.createTextNode('Unspecified Left');
+    btnLeft.appendChild(btnLeftText);
+    btnLeft.id = 'unspecified_left';
+    btnLeft.className = 'btn btn-success';
+    btnLeft.type = 'button';
+    btnLeft.style.fontSize = '1.5rem';
+    btnLeft.setAttribute('data-bs-toggle', 'modal')
+    btnLeft.setAttribute('data-bs-target', '#modal')
+    btnLeft.setAttribute('data-bs-section', 'unspecified_left');
+
+
+    var btnRight = document.createElement('button');
+    var btnRightText = document.createTextNode('Unspecified Right');
+    btnRight.appendChild(btnRightText);
+    btnRight.id = 'unspecified_right';
+    btnRight.className = 'btn btn-success';
+    btnRight.type = 'button';
+    btnRight.style.fontSize = '1.5rem';
+    btnRight.setAttribute('data-bs-toggle', 'modal')
+    btnRight.setAttribute('data-bs-target', '#modal')
+    btnRight.setAttribute('data-bs-section', 'unspecified_right');
+
+    containerDiv.appendChild(btnLeft);
+    containerDiv.appendChild(btnRight);
+
+
     var modal = document.getElementById('modal')
     modal.addEventListener('show.bs.modal', e=>{
 
