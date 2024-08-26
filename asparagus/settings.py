@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'sorl.thumbnail',
     'celery_progress',
     'rest_framework',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -61,6 +62,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'asparagus.urls'
@@ -103,6 +105,10 @@ CACHES = {
     }
 }
 
+CORS_ALLOWED_ORIGINS = [
+    "http://digiag.bime.ntu.edu.tw:3000",
+    "http://140.112.183.138:3000",
+]
 
 
 # Password validation
