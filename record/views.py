@@ -174,24 +174,32 @@ def toggle_detection(request):
     global exit_thread
 
     status = request.POST['status']
+    print(f"Received status: {status}")
 
     if status == "start":
         enable_detection = True
         # Start a thread only if it doesn't exist or has already finished.
-        with thread_lock:
+        with thread_lock:  # Lock to ensure thread safety when checking and modifying the detection_thread.
             if detection_thread is None or not detection_thread.is_alive():
-                exit_thread = False # Reset the exit flag.
+                exit_thread = False  # Reset the exit flag to allow the thread to run.
                 detection_thread = threading.Thread(target=perform_detection)
                 detection_thread.start()
         print("Start regular execution of identification")
+
     elif status == "stop":
         enable_detection = False
-        # Stop the thread only if it exists and is running.
-        with thread_lock:
+        with thread_lock:  # Lock to ensure thread safety when stopping the detection thread.
+            # Only stop the thread if it exists and is currently running.
             if detection_thread is not None and detection_thread.is_alive():
                 exit_thread = True
-                detection_thread.join()  # Wait for the thread to finish.
-                detection_thread = None  # Clear the thread object.
+                # Do not join (wait for the thread to finish) inside the lock to avoid potential deadlock.
+            else:
+                print("Thread has already been stopped automatically.")
+        # Join (wait for the thread to finish) outside the lock to ensure it can clean up without blocking other operations.
+        if detection_thread is not None and detection_thread.is_alive():
+            detection_thread.join()
+        with thread_lock:
+            detection_thread = None  # Clear the thread object to indicate it's no longer running.
         print("Stop regular execution of identification, kill session")
 
     return HttpResponse('Success')
@@ -202,25 +210,39 @@ def perform_detection():
 
     print("receive toggle trigger")
 
-    while not exit_thread:
-        if enable_detection:
-            # Process tasks in the queue.
-            while not detection_queue.empty():
-                image_id = detection_queue.get()
-                print(f"{image_id = }")
+    last_queue_empty_time = None  # Keeps track of the last time the queue was empty.
 
-                post_data = {
-                    "demo_img_id": image_id,
-                    "straw": "false",
-                    "source": "patrol",
-                }
-                response = requests.post("http://140.112.183.138:3000/monitor/demo/", data=post_data)
-                if response.status_code == 200:
-                    print("Successfully demo!")
+    try:
+        while not exit_thread:
+            if enable_detection:
+                # Process tasks in the detection queue.
+                while not detection_queue.empty():
+                    image_id = detection_queue.get()
+                    print(f"{image_id = }")
+
+                    post_data = {
+                        "demo_img_id": image_id,
+                        "straw": "false",
+                        "source": "patrol",
+                    }
+                    response = requests.post("http://140.112.183.138:3000/monitor/demo/", data=post_data)
+                    if response.status_code == 200:
+                        print("Successfully demo!")
+                    else:
+                        print("Fail demo!")
+
+                if detection_queue.empty():
+                    print("*** Queue is empty ***")
+                    time_range = 300  # Set to 5 minutes (300 seconds).
+                    if last_queue_empty_time is None:
+                        last_queue_empty_time = time.time()  # Record the time when the queue first becomes empty.
+                    elif time.time() - last_queue_empty_time >= time_range:  # Check if the queue has been empty for the specified duration.
+                        print(f"Queue has been empty for {time_range} seconds, terminating thread")
+                        exit_thread = True  # Terminate the thread if the queue remains empty for 5 minutes.
                 else:
-                    print("Fail demo!")
+                    last_queue_empty_time = None  # Reset the timer if the queue is no longer empty.
 
+            time.sleep(5)  # Check the queue status every 5 seconds.
 
-            print("***** Queue is empty")
-
-        time.sleep(5)  # Check the queue every 5 seconds.
+    finally:
+        print("Thread terminated and cleaned up.")
