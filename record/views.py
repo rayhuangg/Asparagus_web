@@ -100,7 +100,8 @@ def side(request):
                 name = request.POST['name']
             except:
                 name = datetime.datetime.now().astimezone(pytz.timezone('Asia/Taipei')).strftime('%Y%m%d_%H%M%S')
-            ImageList(section=section, name=name, image=image).save()
+            side = request.POST['side'] # only right or left
+            ImageList(section=section, name=name, image=image, side=side).save()
 
             latest_id = ImageList.objects.latest().id
 

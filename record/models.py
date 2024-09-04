@@ -23,9 +23,8 @@ class ImageList(models.Model):
 
     name = models.CharField(max_length=100, default=str(datetime.now().strftime('%Y%m%d_%H%M%S')))
     date = models.DateTimeField(default=now)
-    # date.editable = True
     image = models.ImageField(upload_to=uppath)
-    focus = models.FloatField(default=0.0)
+    side = models.CharField(max_length=5, choices=[('left', 'left'), ('right', 'right')], null=True)
 
     def __str__(self):
         return self.name + '_' + str(self.id)

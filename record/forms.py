@@ -21,17 +21,16 @@ class ImageListForm(forms.ModelForm):
         super(ImageListForm, self).__init__(*args, **kwargs)
         self.fields['name'].required = False
         self.fields['date'].required = False
-        self.fields['focus'].required = False
+
     class Meta:
         model = ImageList
-        fields = ['section', 'name', 'date', 'image', 'focus']
+        fields = ['section', 'name', 'date', 'image']
 
 class FrontViewForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(FrontViewForm, self).__init__(*args, **kwargs)
         self.fields['name'].required = False
         self.fields['date'].required = False
-        self.fields['focus'].required = False
 
     class Meta:
         model = FrontView
