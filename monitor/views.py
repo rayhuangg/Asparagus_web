@@ -481,8 +481,8 @@ def setup_cfg():
     # cfg.MODEL.WEIGHTS = "detectron/output/model_straw.pth"
 
     # Ray Huang Mask DINO
-    cfg.merge_from_file("maskDINO_asparagus/output/20230812_110004_R50_normal_retrain_on_straw/config.yaml")
-    cfg.MODEL.WEIGHTS = "maskDINO_asparagus/output/20230812_110004_R50_normal_retrain_on_straw/model_final.pth"
+    cfg.merge_from_file("maskDINO_asparagus/output/20240226_154423_R50_normal_point1_dataset/config.yaml")
+    cfg.MODEL.WEIGHTS = "maskDINO_asparagus/output/20240226_154423_R50_normal_point1_dataset/model_final.pth"
     cfg.freeze()
     return cfg
 
@@ -719,9 +719,9 @@ def demo(request):
                 latest_patrol_demo_predict_time = ResultList.objects.filter(demo=latest_patrol_demo.id).first().date
 
                 # calculate the time between now and lastest patrol demo
-                current_time = timezone.now() # django time object
+                current_time = timezone.now()
                 time_difference = current_time - latest_patrol_demo_predict_time
-                if time_difference < timedelta(minutes=2):
+                if time_difference < timedelta(minutes=2): # if timedelta in 2 minutes, use the lastest demo object
                     demo_model = latest_patrol_demo
                 else:
                     # if timedelta not in spcify delta, create a new demo object
