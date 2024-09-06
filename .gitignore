@@ -7,7 +7,6 @@ __pycache__/
 *.MOV
 *.pth
 *.pkl
-*.http
 *.sqlite3
 **/migrations
 detectron/config/**
@@ -17,7 +16,8 @@ nohup.out
 
 server.sh
 routine.*
-sqltest.py
-area.py
 sql_chiang.py
 monitor/progress*
+
+
+!**/readme_imgs/**
