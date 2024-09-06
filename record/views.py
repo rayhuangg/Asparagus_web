@@ -1,7 +1,7 @@
 import threading
 from django.shortcuts import render, reverse, redirect
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
 
 import queue
 import requests
@@ -100,7 +100,12 @@ def side(request):
                 name = request.POST['name']
             except:
                 name = datetime.datetime.now().astimezone(pytz.timezone('Asia/Taipei')).strftime('%Y%m%d_%H%M%S')
-            side = request.POST['side'] # only right or left
+
+            side = request.POST.get('side')
+
+            # TODO: 假如上傳錯誤資訊還沒解決
+            if side not in ['left', 'right', None]:
+                return JsonResponse({"error": "Invalid side value, must be 'left', 'right', or None"}, status=400)
             ImageList(section=section, name=name, image=image, side=side).save()
 
             latest_id = ImageList.objects.latest().id
@@ -108,7 +113,7 @@ def side(request):
             if request.POST.get("detection") == "True":
                 print("Receive detection commend, starting the patrol detection task.")
                 detection_queue.put(latest_id)
-                print("Patrol detection task started. ")
+                print("Patrol detection task start.")
 
         else:
             print(form.errors)

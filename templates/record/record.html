@@ -243,7 +243,6 @@
     btnLeft.setAttribute('data-bs-target', '#modal')
     btnLeft.setAttribute('data-bs-section', 'unspecified_left');
 
-
     var btnRight = document.createElement('button');
     var btnRightText = document.createTextNode('Unspecified Right');
     btnRight.appendChild(btnRightText);
@@ -335,16 +334,16 @@
                 var url = "http://140.112.183.138:3000/record/toggleDetection";
                 var status = currentState ? "start" : "stop";
 
-                $.ajax({
+                $.ajax({    
                     type: "POST",
                     url: url,
                     data: { status: status },
                     success: function() {
-                        console.log(JSON.stringify({ status: status }) + "POST请求成功");
+                        console.log(JSON.stringify({ status: status }) + "POST success");
                         previousState = currentState; // Update the previous state
                     },
                     error: function() {
-                        console.error("POST请求失败");
+                        console.error("POST failed");
                         // Restore the switch to the previous state
                         $("#patrol_image_Instant_detect_toggle").prop("checked", previousState);
                     }
