@@ -1,0 +1,11 @@
+@baseUrl = http://140.112.183.138:3000
+
+###
+# [API] Section newest density data search
+###
+GET {{baseUrl}}/api/section/A1/
+
+###
+# [API] Density batch search
+###
+GET {{baseUrl}}/api/batch/399/

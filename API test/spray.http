@@ -1,0 +1,70 @@
+@baseUrl = http://140.112.183.138:3000
+
+###
+# [Spray] update vehicle data
+###
+POST {{baseUrl}}/spray/vehicleData/ HTTP/1.1
+content-type: application/json
+
+{
+    "uwb_coordinates": [100, 250],
+    "battery_level": 80,
+    "sprayed_pesticide": 30,
+    "remaining_pesticide": 70
+}
+
+###
+# [Spray] get vehicle data
+###
+GET {{baseUrl}}/spray/vehicleData/ HTTP/1.1
+
+
+###
+# [Spray] Updata spray experiment START
+POST {{baseUrl}}/spray/expData/ HTTP/1.1
+content-type: application/json
+
+{
+    "status": "start",
+    "content": {
+        "location": "Yizhu",
+        "greenhouse": "B6",
+        "fertilizer": [
+            "3",
+            "1",
+            ]
+    }
+}
+
+###
+# [Spray] Updata spray experiment STOP
+POST {{baseUrl}}/spray/expData/ HTTP/1.1
+content-type: application/json
+
+{
+    "status": "end",
+    "content": {
+        "fertilizer_total_amount": "70.5",
+        "spray_target": [
+            "yang-middle30",
+            "yang-right1",
+        ]
+    }
+}
+
+
+###
+# [Spray] query fertilizer list
+###
+GET {{baseUrl}}/spray/fertilizers/ HTTP/1.1
+
+
+###
+# [Spray] query fertilizer list
+###
+POST {{baseUrl}}/spray/fertilizers/ HTTP/1.1
+content-type: application/json
+
+{
+    "name": "佈飛松"
+}
