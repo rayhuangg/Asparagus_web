@@ -1,6 +1,7 @@
 from django.db import models
 from django.utils.timezone import now
 from datetime import datetime
+from django.core.exceptions import ValidationError
 
 
 class Section(models.Model):
@@ -24,7 +25,7 @@ class ImageList(models.Model):
     name = models.CharField(max_length=100, default=str(datetime.now().strftime('%Y%m%d_%H%M%S')))
     date = models.DateTimeField(default=now)
     image = models.ImageField(upload_to=uppath)
-    side = models.CharField(max_length=5, choices=[('left', 'left'), ('right', 'right')], null=True)
+    side = models.CharField(max_length=5, choices=[('left', 'left'), ('right', 'right'), ('None', 'None')])
 
     def __str__(self):
         return self.name + '_' + str(self.id)

@@ -1,7 +1,8 @@
 import threading
 from django.shortcuts import render, reverse, redirect
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponse, HttpResponseRedirect, JsonResponse
+from django.http import HttpResponse
+
 
 import queue
 import requests
@@ -103,10 +104,8 @@ def side(request):
 
             side = request.POST.get('side')
 
-            # TODO: 假如上傳錯誤資訊還沒解決
-            if side not in ['left', 'right', None]:
-                return JsonResponse({"error": "Invalid side value, must be 'left', 'right', or None"}, status=400)
-            ImageList(section=section, name=name, image=image, side=side).save()
+            image = ImageList(section=section, name=name, image=image, side=side)
+            image.save()
 
             latest_id = ImageList.objects.latest().id
 
@@ -121,6 +120,7 @@ def side(request):
         form = ImageListForm()
 
     return render(request, 'record/record.html', {'form': form})
+
 
 @csrf_exempt
 def front(request):

@@ -12,8 +12,8 @@ class ImageListForm(forms.ModelForm):
 
     class Meta:
         model = ImageList
-        fields = ['section', 'name', 'date', 'image', 'side']
-    
+        fields = ['section', 'name', 'date', 'image']
+
 
 class FrontViewForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
