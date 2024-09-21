@@ -25,7 +25,7 @@ class ImageList(models.Model):
     name = models.CharField(max_length=100, default=str(datetime.now().strftime('%Y%m%d_%H%M%S')))
     date = models.DateTimeField(default=now)
     image = models.ImageField(upload_to=uppath)
-    side = models.CharField(max_length=5, choices=[('left', 'left'), ('right', 'right'), ('None', 'None')])
+    side = models.CharField(max_length=5, choices=[('left', 'left'), ('right', 'right'), ('None', 'None')], null=True)
 
     def __str__(self):
         return self.name + '_' + str(self.id)
