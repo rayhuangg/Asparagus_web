@@ -2,10 +2,12 @@ import math
 import sys
 from os import path
 from datetime import timedelta
+from typing import Tuple, Optional
 
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Q
 from django.utils.timezone import now
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -54,6 +56,22 @@ def scan(request):
     return render(request, 'lidar/lidar.html', {'form': ScanForm})
 
 
+def get_opposite_section(section_name) -> str:
+    '''
+    Get the opposite section of the current section.
+    For example, if the current section is 'A1', the opposite section is 'B1'.
+    '''
+    if section_name[0] in 'ABCDEFGH':
+        side = section_name[0]
+        number = section_name[1:]
+        if side in 'ACEG':
+            opposite_side = chr(ord(side) + 1)  # A -> B, C -> D, E -> F, G -> H
+        elif side in 'BDFH':
+            opposite_side = chr(ord(side) - 1)  # B -> A, D -> C, F -> E, H -> G
+        return f"{opposite_side}{number}"
+    return None
+
+
 class Lidar2dData(APIView):
     def post(self, request):
         serializer = Lidar2D_ROS_data_Serializer(data=request.data)
@@ -66,16 +84,6 @@ class Lidar2dData(APIView):
             right_image = None
             front_image = None
 
-            def get_opposite_section(section_name) -> str:
-                if section_name[0] in 'ABCDEFGH':
-                    side = section_name[0]
-                    number = section_name[1:]
-                    if side in 'ACEG':
-                        opposite_side = chr(ord(side) + 1)  # A -> B, C -> D, E -> F, G -> H
-                    elif side in 'BDFH':
-                        opposite_side = chr(ord(side) - 1)  # B -> A, D -> C, F -> E, H -> G
-                    return f"{opposite_side}{number}"
-                return None
 
             # Get the opposite section of the current section
             opposite_section = get_opposite_section(section.name)
@@ -85,42 +93,64 @@ class Lidar2dData(APIView):
                 right_section_latest_image = ImageList.objects.filter(section__name__in=[section, opposite_section], side="right").latest('date')
                 front_latest_image = FrontView.objects.latest('date')
 
-                if now() - left_section_latest_image.date <= timedelta(seconds=3000000):
+                time_perid_for_upload_image_timedelay = 1000000  # untis: seconds, default: 10s
+                # Check LEFE image
+                if now() - left_section_latest_image.date <= timedelta(seconds=time_perid_for_upload_image_timedelay):
                     left_image = left_section_latest_image
-                    print(f"{left_image = }, {left_image.section.name = }")
                 else:
-                    print("No left images found within the specified time interval.")
+                    left_section_latest_image = None
 
-                if now() - right_section_latest_image.date <= timedelta(seconds=3000000):
+                # Check RIGHT image
+                if now() - right_section_latest_image.date <= timedelta(seconds=time_perid_for_upload_image_timedelay):
                     right_image = right_section_latest_image
-                    print(f"{right_image = }, {right_image.section.name = }")
                 else:
-                    print("No right images found within the specified time interval.")
+                    right_section_latest_image = None
 
-                if now() - front_latest_image.date <= timedelta(seconds=30):
+                # Check FRONT image
+                if now() - front_latest_image.date <= timedelta(seconds=time_perid_for_upload_image_timedelay):
                     front_image = front_latest_image
                 else:
-                    print("No front images found within the specified time interval..")
+                    front_latest_image = None
 
             except ImageList.DoesNotExist:
                 print("No side images found.")
             except FrontView.DoesNotExist:
                 print("No front images found.")
 
+
+            # Only check if the section is legal, but do not store it in this table
             lidar_data = Lidar2D_ROS_data(
                 lidar_model=lidar_model,
-                section=section,
                 ranges=ranges,
                 create_time=now(),
                 front_image=front_image,
                 left_image=left_image,
                 right_image=right_image
             )
-            # lidar_data.save()
-            # print(f"{lidar_data = }")
+            lidar_data.save()
 
-            print(f"{lidar_model = }, {section = }, {ranges = },  {len(ranges) = }")
-
+            # print(f"id: {lidar_data.id}, {lidar_model = }, {section = }, {len(ranges) = }, left_image = {left_section_latest_image}, right_image = {right_section_latest_image}, front_image = {front_latest_image}")
             return Response({"message": "Data successfully saved."}, status=status.HTTP_200_OK)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+# Forward scarch
+def obtain_side_image_based_on_lidar(lidar: Lidar2D_ROS_data) -> Tuple[Optional[ImageList], Optional[ImageList]]:
+    left_image = lidar.left_image if lidar.left_image else None
+    right_image = lidar.right_image if lidar.right_image else None
+
+    return (left_image, right_image) # tuple type
+
+# Backward search
+def obtain_lidar_data_based_on_side_image(image: ImageList) -> Lidar2D_ROS_data:
+    try:
+        if image.side == "left":
+            return ImageList.objects.get(id=image.id).lidar2d_left_set.all().latest('create_time')
+        elif image.side == "right":
+            return ImageList.objects.get(id=image.id).lidar2d_right_set.all().latest('create_time')
+    except Lidar2D_ROS_data.DoesNotExist:
+        return None
+
+def obtain_front_image_based_on_lidar(lidar: Lidar2D_ROS_data) -> FrontView:
+    return lidar.front_image if lidar.front_image else None

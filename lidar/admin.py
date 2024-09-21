@@ -28,7 +28,6 @@ class Lidar2D_ROS_dataAdmin(admin.ModelAdmin):
                  (None, {'fields': ['front_image']}),
                  (None, {'fields': ['left_image']}),
                  (None, {'fields': ['right_image']}),
-                 (None, {'fields': ['section']})
                 ]
 
 admin.site.register(Scan, ScanAdmin)

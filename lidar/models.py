@@ -9,6 +9,7 @@ sys.path.append(path.dirname(path.dirname(path.abspath(__file__))))
 from record.models import ImageList, FrontView, Section
 
 
+# Old version, only store the scan points without any ROS format
 class Scan(models.Model):
     name = models.CharField(max_length=100, default=str(datetime.now().strftime('%Y%m%d_%H%M%S')))
     date = models.DateTimeField('Date created', default=now)
@@ -38,21 +39,36 @@ class Lidar2D_model(models.Model):
     def __str__(self):
         return self.model_name
 
+    class Meta:
+        # make admin page readable, cause Django will auto add space betweed Upper case word
+        verbose_name = "Lidar2D ROS model"
+        verbose_name_plural = "Lidar2D ROS models"
 
-# Store the lidar scan data (range)
+
+# New version, Store the lidar scan data (range)
 class Lidar2D_ROS_data(models.Model):
     create_time = models.DateTimeField('Time created', default=now)
     lidar_model = models.ForeignKey(Lidar2D_model, on_delete=models.CASCADE)
     ranges = models.JSONField()
+    side = models.CharField(max_length=5, choices=[('left', 'left'), ('right', 'right')], null=True) # only for DROXO used
 
-    front_image = models.ForeignKey(FrontView, on_delete=models.CASCADE)
-    left_image = models.ForeignKey(ImageList, on_delete=models.CASCADE, related_name='lidar2d_ros_left_images')
-    right_image = models.ForeignKey(ImageList, on_delete=models.CASCADE, related_name='lidar2d_ros_right_images')
-    section = models.ForeignKey(Section, on_delete=models.CASCADE)
+    left_image = models.ForeignKey(
+        ImageList, on_delete=models.SET_NULL, null=True, blank=True, related_name='lidar2d_left_set'
+    )
+    right_image = models.ForeignKey(
+        ImageList, on_delete=models.SET_NULL, null=True, blank=True, related_name='lidar2d_right_set'
+    )
+    front_image = models.ForeignKey(
+        FrontView, on_delete=models.SET_NULL, null=True, blank=True, related_name='lidar2d_front_set'
+    )
 
     def __str__(self):
-        return f"LaserScan {self.id} at {self.create_time}"
+        return f"LaserScan id {self.id}, upload at {self.create_time}"
 
     class Meta:
         ordering = ['-create_time']
         get_latest_by = "create_time"
+
+        # make admin page readable, cause Django will auto add space betweed Upper case word
+        verbose_name = "Lidar2D ROS Data"
+        verbose_name_plural = "Lidar2D ROS Data"
