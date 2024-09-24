@@ -63,7 +63,7 @@ class Lidar2D_ROS_data(models.Model):
     )
 
     def __str__(self):
-        return f"LaserScan id {self.id}, upload at {self.create_time}"
+        return f"{self.lidar_model} - id {self.id} - upload at {self.create_time.astimezone().strftime('%Y-%m-%d %H:%M:%S')}"
 
     class Meta:
         ordering = ['-create_time']

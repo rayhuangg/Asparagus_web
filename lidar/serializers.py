@@ -10,11 +10,12 @@ class Lidar2D_ROS_data_Serializer(serializers.ModelSerializer):
 
     class Meta:
         model = Lidar2D_ROS_data
-        fields = ["lidar_model", "ranges", "section"]
+        fields = ["lidar_model", "ranges", "section", "side"]
 
     def validate(self, data):
         model_name = data.get('lidar_model')
         section_name = data.get('section')
+        side = data.get('side')
 
         if model_name:
             try:
@@ -32,5 +33,10 @@ class Lidar2D_ROS_data_Serializer(serializers.ModelSerializer):
 
         if not isinstance(data.get('ranges'), list) or not data['ranges']:
             raise serializers.ValidationError({"ranges": "Ranges must be a non-empty list."})
+
+        if side and side not in ["left", "right"]:
+            raise serializers.ValidationError({"side": "Side must be either 'left' or 'right'."})
+        else:
+            data['side'] = side
 
         return data
