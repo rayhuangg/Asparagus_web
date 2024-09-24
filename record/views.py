@@ -127,7 +127,6 @@ def front(request):
     form = FrontViewForm()
     if request.method == 'POST':
         form = FrontViewForm(request.POST, request.FILES)
-        # form.save()
         if form.is_valid():
             form.save()
         else:

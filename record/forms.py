@@ -23,4 +23,4 @@ class FrontViewForm(forms.ModelForm):
 
     class Meta:
         model = FrontView
-        fields = '__all__'
+        fields = ['name', 'date', 'image']
