@@ -94,7 +94,7 @@ class Lidar2dData(APIView):
             front_image = None
 
             # Constants for determining lidar and image data are the same point or not, based on the time delay between them upload time.
-            self.IMAGE_UPLOAD_TIME_DELAY_SECOND = 1500000  # units: seconds, default: 10s
+            self.IMAGE_UPLOAD_TIME_DELAY_SECOND = 10  # units: seconds, default: 10s
 
             # DROXO spraying robot, install on the both side of the robot
             # Only find one side image, without considering the opposite side and front image
