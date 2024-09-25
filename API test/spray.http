@@ -29,12 +29,14 @@ content-type: application/json
     "content": {
         "location": "Yizhu",
         "greenhouse": "B6",
-        "fertilizer": [
-            "3",
-            "1",
-            ]
+        "fertilizers": [
+            {"fertilizer_id": "3", "amount": 20.5},
+            {"fertilizer_id": "1", "amount": 50.0}
+        ],
+        "note": "以200L的水、0.2L的柑桔精油、少量的活麗送稀釋而成。"
     }
 }
+
 
 ###
 # [Spray] Updata spray experiment STOP
@@ -44,13 +46,14 @@ content-type: application/json
 {
     "status": "end",
     "content": {
-        "fertilizer_total_amount": "70.5",
+        "total_water_used": 1000.5,
         "spray_target": [
-            "yang-middle30",
-            "yang-right1",
+            "yang-middle3",
+            "yang-right1"
         ]
     }
 }
+
 
 
 ###

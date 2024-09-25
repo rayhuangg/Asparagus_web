@@ -46,7 +46,7 @@ def update_experiment_info(request):
             return Response(serializer.errors, status=400)
 
     elif status == 'end':
-        # Set end_time to the current time and update fertilizer_total_amount
+        # Update the experiment with end_time, total water used, and fertilizer usages
         last_record = SprayExperimentRecord.objects.last()
         if last_record:
             if last_record.end_time:
@@ -54,11 +54,13 @@ def update_experiment_info(request):
             else:
                 update_data = {
                     'end_time': now(),
-                    'fertilizer_total_amount': data['content'].get('fertilizer_total_amount')
+                    'total_water_used': data['content'].get('total_water_used'),
                 }
                 serializer = SprayExperimentRecordSerializer(last_record, data=update_data, partial=True)
                 if serializer.is_valid():
                     serializer.save()
+
+                    # Upload the spray data to the Professor Cheng-Ying Chou pest detection server
                     spray_target = data['content'].get('spray_target')
                     if spray_target:
                         try:
@@ -66,13 +68,14 @@ def update_experiment_info(request):
                         except Exception as e:
                             return Response({'error': f"Failed to upload spray data: {str(e)}"}, status=500)
 
-
                     return Response(serializer.data, status=200)
                 else:
                     return Response(serializer.errors, status=400)
         else:
             return Response({'error': 'No active experiment to end'}, status=404)
 
+    else:
+        return Response({'error': 'Invalid status, status should be start or stop'}, status=400)
 
 # Upload the exp data to the Professor Cheng-Ying Chou pest detection server.
 def upload_spray_to_professor_chou(sprayed_list: list):
@@ -149,7 +152,7 @@ class VehicleRealTimeData(APIView):
             "remaining_pesticide": remaining_pesticide,
         }
         # Cache the data with a timeout of 600 seconds
-        cache.set("vehicle_status", data, timeout=6000) # TODO:記得改回來
+        cache.set("vehicle_status", data, timeout=600) # TODO:記得改回來
         return Response({"status": "success"}, status=status.HTTP_200_OK)
 
 
