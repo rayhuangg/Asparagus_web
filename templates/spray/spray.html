@@ -183,15 +183,31 @@
             success: function(data) {
                 $('#experiment-list').empty();
                 data.results.forEach(record => {
+                    let fertilizerUsagesHtml = '';
+
+                    if (record.fertilizer_usage_summary && record.fertilizer_usage_summary.length > 0) {
+                        const fertilizerUsages = record.fertilizer_usage_summary.split(', ');
+                        fertilizerUsagesHtml = '';
+                        fertilizerUsages.forEach(fertilizerUsage => {
+                            const [fertilizerName, amount] = fertilizerUsage.split(': ');
+                            fertilizerUsagesHtml += `<li>${fertilizerName} ${amount}</li>`;
+                        });
+                    } else {
+                        fertilizerUsagesHtml = '<p>No fertilizers used.</p>';
+                    }
+
                     $('#experiment-list').append(
                         `<div class="list-group-item">
                             <h5>${record.location} - ${record.greenhouse}</h5>
-                            <p>Fertilizer Total Amount: ${record.fertilizer_total_amount}</p>
+                            <p>Total water used: ${record.total_water_used ? record.total_water_used + ' L' : 'N/A' }</p>
+                            ${fertilizerUsagesHtml}
                             <p>Start Time: ${formatDate(record.start_time)}</p>
                             <p>End Time: ${record.end_time ? formatDate(record.end_time) : 'N/A'}</p>
+                            <p>Note: ${record.note ? record.note : 'No notes'}</p>
                         </div>`
                     );
                 });
+
 
                 $('#prev-page').prop('disabled', !data.previous);
                 $('#next-page').prop('disabled', !data.next);
