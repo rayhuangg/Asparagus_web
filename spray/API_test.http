@@ -33,7 +33,7 @@ content-type: application/json
             {"fertilizer_id": "3", "amount": 20.5},
             {"fertilizer_id": "1", "amount": 50.0}
         ],
-        "note": "以200L的水、0.2L的柑桔精油、少量的活麗送稀釋而成。"
+        "note": "以200L的水、0.2L的柑桔精油、少量的活麗送稀釋而成"
     }
 }
 

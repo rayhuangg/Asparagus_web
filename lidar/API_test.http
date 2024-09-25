@@ -1,0 +1,33 @@
+@baseUrl = http://140.112.183.138:3000
+
+
+###
+# ROS LiDAR data upload, DROXO
+###
+POST {{baseUrl}}/lidar/lidar2dData/ HTTP/1.1
+content-type: application/json
+
+{
+    "lidar_model": "RPLIDAR S2",
+    "section": "A20",
+    "side": "left",
+    "ranges": [1.1, 65.533, 4.4]
+}
+
+###
+# ROS LiDAR data upload, SSL Lidar
+###
+POST {{baseUrl}}/lidar/lidar2dData/ HTTP/1.1
+content-type: application/json
+
+{
+    "lidar_model": "UST-05LX",
+    "section": "unspecified_left",
+    "ranges": [1.1, 65.533, 4.4]
+}
+
+
+###
+# Get the latest lidar data
+GET {{baseUrl}}/lidar/getLidarDataSample/ HTTP/1.1
+

@@ -22,7 +22,7 @@ def upload_side(side, section, imagepath, filename="foo", detection=False):
             print(f"Error uploading... status code: {r.status_code}")
 
 
-side = "left" # "left" or "right" or None
+side = "left" # "left" or "right" or "None"
 section = "C21"
 imagepath = "left.jpg"
 filename = "left.jpg"
