@@ -189,8 +189,8 @@ def obtain_front_image_based_on_lidar(lidar: Lidar2D_ROS_data) -> FrontView:
 # To RayBai, Possible used in the future, if need to check the inf data is valid or not
 def restore_numpy_inf_from_data(ranges) -> np.array:
     arr = np.array(ranges)
-    arr[arr == 1000] = np.inf
-    arr[arr == -1000] = -np.inf
+    arr[arr == 65.533] = np.inf
+    arr[arr == -65.533] = -np.inf
     return arr
 
 
