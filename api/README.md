@@ -4,9 +4,9 @@
 
 用途: 查詢單一批次辨識的所有結果的API，若全部辨識完成，可以使用此機制將所有結果一次抓取下來。
 
-網址: [http://digiag.bime.ntu.edu.tw:3000/api/batch/398/](http://digiag.bime.ntu.edu.tw:3000/api/batch/398/)
+**網址:** http://digiag.bime.ntu.edu.tw:3000/api/batch/398/
 
-最後的398是我們這邊辨識結果資料庫中的ID，可以由這個[影片](https://www.notion.so/API-To-f7777b9e82334f58829aa63ef85bbfcc?pvs=21)中的操作方式取得辨識ID，這個數值不會被更改，可以先用398這組數據測試，這組的資料是第一條走道兩側，也就是A1~B33的結果，得到的應該會是一個json檔案，可以用result["A1"]["density]方式直接查詢單一位置的密度，
+最後的398是我們這邊辨識結果資料庫中的ID，可以由這個[影片](https://www.youtube.com/watch?v=kHc3ePJE3fA)中的操作方式取得辨識ID，這個數值不會被更改，可以先用398這組數據測試，這組的資料是第一條走道兩側，也就是A1~B33的結果，得到的會是一個json檔案，可以用`result["A1"]["density]`方式直接查詢單一位置的密度。
 
 ## 單點查詢
 

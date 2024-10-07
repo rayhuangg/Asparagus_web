@@ -3,7 +3,7 @@ Asparagus monitoring system implemented using django
 
 http://digiag.bime.ntu.edu.tw:3000/
 
-![](https://github.com/JustinBear99/django_asparagus/blob/master/homepage.jpg)
+![homepage](./homapage.png)
 
 ## Home
 Home page of the system.
@@ -28,29 +28,23 @@ Statistical analysis for the detection results.
 3. Also, if the spear is selected, the length prediction feature will also be available.
 
 ## Lidar
-Show the Lidar scanning in real-time. Robot vehicle is required.
+Store the 2D LiDAR data in ROS2 sensor_msgs/msg/LaserScan Message format. Robot vehicle is required.
+* Deal with multiple LiDAR models, not specific to a certain product.
+* Auto related to the left, right and front view images of the robot in the same monitoring point, based on the timestamp.
+
+## API
+ORM query the resaltlist database for the each section poind density for the fertilizer variable spraying.
+
+## Spray
+Store and display the spray data of the automation spraying robot.
+* Store History of the spray data, including the spray time, location, fertilizer type and the amount of fertilizer,
+* Manual refresh for the latest spraying robot information.
 
 ## Admin
 Admin page for accessing the database.
 
+## Database Table Design
+<img src="./schema.svg" alt="stack stats" style="max-width: 100%;">
 
-<details>
-<summary>Folder/ File explain</summary>
 
-```
-api                    // 提供佐翼查詢section最新辨識結果功能
-asparagus              // 主要設定目錄，內有setting.py，原本專案應是較做asparagus，而非目前django_asparagus
-css                    //
-detectron              // detectron2運行model使用
-home                   //
-lidar                  //
-monitor                //
-record                 //
-static                 //
-stats                  //
-templates              //
-db.sqlite3             //
-manage.py              //
-routine.py             // 每天定時執行demo predict
-```
-</details>
+
