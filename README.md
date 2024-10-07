@@ -3,7 +3,7 @@ Asparagus monitoring system implemented using django
 
 http://digiag.bime.ntu.edu.tw:3000/
 
-![homepage](./homapage.png)
+![homepage](./homepage.png)
 
 ## Home
 Home page of the system.
